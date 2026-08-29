@@ -1,6 +1,26 @@
-/** Canvas color themes. The side panels stay neutral; these style the drawing itself. */
+/** Chrome (toolbar/sidebars/panels) colors, applied as CSS variables. */
+export interface ChromeTheme {
+  toolbarBg: string
+  sideBg: string
+  panelBg: string
+  border: string
+  borderStrong: string
+  hover: string
+  text: string
+  sub: string
+  headBg: string
+  btnBg: string
+  inputBg: string
+  accent: string
+  accentHover: string
+  accentText: string
+  danger: string
+}
+
+/** Canvas + chrome color themes. */
 export interface CanvasTheme {
   label: string
+  chrome: ChromeTheme
   workspace: string
   roomFill: string
   grid: string
@@ -29,6 +49,7 @@ export interface CanvasTheme {
 export const THEMES: Record<string, CanvasTheme> = {
   cream: {
     label: 'Cream (default)',
+    chrome: { toolbarBg: '#3d342b', sideBg: '#f7f3ea', panelBg: '#ffffff', border: '#e0d9cb', borderStrong: '#b8ae9e', hover: '#efe8da', text: '#2e2820', sub: '#6b5f52', headBg: '#8a7f6f', btnBg: '#f7f3ea', inputBg: '#ffffff', accent: '#2b7de9', accentHover: '#1f6cd4', accentText: '#ffffff', danger: '#b0301c' },
     workspace: '#f1ecdf',
     roomFill: '#fbf8f1',
     grid: '#d8d2c6',
@@ -55,6 +76,7 @@ export const THEMES: Record<string, CanvasTheme> = {
   },
   grayblue: {
     label: 'Gray-blue',
+    chrome: { toolbarBg: '#2e3a46', sideBg: '#eef2f6', panelBg: '#fbfdfe', border: '#d3dde6', borderStrong: '#a8b8c6', hover: '#e2eaf1', text: '#26313d', sub: '#5d6b7a', headBg: '#7d8d9d', btnBg: '#eef2f6', inputBg: '#ffffff', accent: '#2b7de9', accentHover: '#1f6cd4', accentText: '#ffffff', danger: '#b0301c' },
     workspace: '#e6ebf1',
     roomFill: '#f8fafc',
     grid: '#cfd9e3',
@@ -81,6 +103,7 @@ export const THEMES: Record<string, CanvasTheme> = {
   },
   purple: {
     label: 'Light purple',
+    chrome: { toolbarBg: '#372c46', sideBg: '#f1edf7', panelBg: '#fcfaff', border: '#dcd2e9', borderStrong: '#b3a4c9', hover: '#e9e1f3', text: '#2f2740', sub: '#665a7a', headBg: '#8b7ba4', btnBg: '#f1edf7', inputBg: '#ffffff', accent: '#7048c9', accentHover: '#5d38ad', accentText: '#ffffff', danger: '#b0301c' },
     workspace: '#ebe7f2',
     roomFill: '#faf8fd',
     grid: '#d9d0e6',
@@ -107,6 +130,7 @@ export const THEMES: Record<string, CanvasTheme> = {
   },
   green: {
     label: 'Light green',
+    chrome: { toolbarBg: '#2e3c2a', sideBg: '#eef4ec', panelBg: '#fafdf8', border: '#d3e0cd', borderStrong: '#a9bda1', hover: '#e3eddf', text: '#27341f', sub: '#5c6e54', headBg: '#7c9070', btnBg: '#eef4ec', inputBg: '#ffffff', accent: '#2e8b57', accentHover: '#247247', accentText: '#ffffff', danger: '#b0301c' },
     workspace: '#e7efe6',
     roomFill: '#f7fbf5',
     grid: '#cfdccb',
@@ -133,6 +157,7 @@ export const THEMES: Record<string, CanvasTheme> = {
   },
   blueprint: {
     label: 'Blueprint',
+    chrome: { toolbarBg: '#0b2850', sideBg: '#10345f', panelBg: '#16406f', border: '#28517f', borderStrong: '#3f6795', hover: '#1d4a7c', text: '#e8f1ff', sub: '#b9cdea', headBg: '#0d2c55', btnBg: '#1b4a80', inputBg: '#0f3465', accent: '#63c1ff', accentHover: '#8dd2ff', accentText: '#0b2850', danger: '#ff9c8a' },
     workspace: '#0f3465',
     roomFill: '#154078',
     grid: 'rgba(255,255,255,0.16)',

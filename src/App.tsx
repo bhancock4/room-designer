@@ -51,6 +51,30 @@ export default function App() {
   const fileRef = useRef<HTMLInputElement>(null)
   const booted = useRef(false)
 
+  // apply theme chrome colors as CSS variables
+  useEffect(() => {
+    const c = (THEMES[store.theme] ?? THEMES.cream).chrome
+    const root = document.documentElement.style
+    const map: Record<string, string> = {
+      '--toolbar-bg': c.toolbarBg,
+      '--side-bg': c.sideBg,
+      '--panel-bg': c.panelBg,
+      '--border': c.border,
+      '--border-strong': c.borderStrong,
+      '--hover': c.hover,
+      '--text': c.text,
+      '--sub': c.sub,
+      '--head-bg': c.headBg,
+      '--btn-bg': c.btnBg,
+      '--input-bg': c.inputBg,
+      '--accent': c.accent,
+      '--accent-hover': c.accentHover,
+      '--accent-text': c.accentText,
+      '--danger': c.danger,
+    }
+    for (const [k, v] of Object.entries(map)) root.setProperty(k, v)
+  }, [store.theme])
+
   // boot: restore autosave
   useEffect(() => {
     if (booted.current) return
@@ -83,14 +107,15 @@ export default function App() {
       const s = useStore.getState()
       if (e.key === 'Escape') {
         if (showSpec) setShowSpec(false)
-        else if (showHelp) setShowHelp(false)
-        else if (showSettings) setShowSettings(false)
-        else if (s.editRoom) s.setEditRoom(false)
+        else if (showSettings) {
+          setShowSettings(false)
+          setShowHelp(false)
+        } else if (s.editRoom) s.setEditRoom(false)
         else if (s.solo) s.select(s.selectedId, false)
         else s.select(null)
         return
       }
-      if (showSpec || showHelp || showSettings) return
+      if (showSpec || showSettings) return
       if (e.key === 'Tab') {
         e.preventDefault()
         s.tabSelect(e.shiftKey ? -1 : 1)
@@ -110,6 +135,7 @@ export default function App() {
         s.deleteSelection()
       } else if (e.key === '?') {
         setShowHelp(true)
+        setShowSettings(true)
       } else if (e.key.startsWith('Arrow')) {
         e.preventDefault()
         if (e.ctrlKey || e.metaKey) {
@@ -273,11 +299,8 @@ export default function App() {
         <button className="primary" onClick={() => setShowSpec(true)}>
           📄 Spec Sheet / PDF
         </button>
-        <button onClick={() => setShowSettings(true)} title="Settings">
+        <button className="gear" onClick={() => setShowSettings(true)} title="Settings & help">
           ⚙
-        </button>
-        <button onClick={() => setShowHelp(true)} title="Hotkeys">
-          ?
         </button>
       </div>
       <div className="main">
@@ -344,30 +367,29 @@ export default function App() {
             <p className="hint">
               R and ⌘-arrows rotate by these steps. A selected piece can override its own step in the side panel.
             </p>
-            <button className="primary" onClick={() => setShowSettings(false)}>
+            <details className="help-details" open={showHelp}>
+              <summary>⌨ Hotkeys &amp; tips</summary>
+              <table>
+                <tbody>
+                  {HOTKEYS.map(([k, v]) => (
+                    <tr key={k}>
+                      <td>
+                        <kbd>{k}</kbd>
+                      </td>
+                      <td>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+            <button
+              className="primary"
+              onClick={() => {
+                setShowSettings(false)
+                setShowHelp(false)
+              }}
+            >
               Done
-            </button>
-          </div>
-        </div>
-      )}
-      {showHelp && (
-        <div className="modal-backdrop" onClick={() => setShowHelp(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Hotkeys &amp; tips</h2>
-            <table>
-              <tbody>
-                {HOTKEYS.map(([k, v]) => (
-                  <tr key={k}>
-                    <td>
-                      <kbd>{k}</kbd>
-                    </td>
-                    <td>{v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button className="primary" onClick={() => setShowHelp(false)}>
-              Got it
             </button>
           </div>
         </div>
