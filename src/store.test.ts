@@ -101,6 +101,34 @@ describe('undo/redo', () => {
   })
 })
 
+describe('nudge with snap', () => {
+  it('an arrow move toward a nearby open edge snaps flush and connects', () => {
+    const p11 = { id: 'n1', defId: '11', x: 24, y: 20, rot: 0 as const, reversed: false }
+    const p32 = { id: 'n2', defId: '32', x: 24 + 92 + 3, y: 22, rot: 0 as const, reversed: false }
+    useStore.setState({ pieces: [p11, p32], connections: [], selectedId: 'n2', solo: false })
+    useStore.getState().nudge(-1, 0)
+    const moved = useStore.getState().pieces.find((p) => p.id === 'n2')!
+    expect(moved.x).toBe(24 + 92) // flush against the 11L's open end
+    expect(moved.y).toBe(20) // ends aligned by the snap
+    expect(useStore.getState().connections).toEqual([{ a: 'n2', b: 'n1' }])
+  })
+
+  it('a nudge away from a flush edge does not stick', () => {
+    const p11 = { id: 'n1', defId: '11', x: 24, y: 20, rot: 0 as const, reversed: false }
+    const p31 = { id: 'n2', defId: '31', x: 24 + 92, y: 20, rot: 0 as const, reversed: false }
+    useStore.setState({ pieces: [p11, p31], connections: [], selectedId: 'n2', solo: false })
+    useStore.getState().nudge(1, 0)
+    expect(useStore.getState().pieces.find((p) => p.id === 'n2')!.x).toBe(24 + 93)
+  })
+
+  it('snaps to a wall when nudging toward it', () => {
+    const p32 = { id: 'n1', defId: '32', x: 30, y: 3, rot: 0 as const, reversed: false }
+    useStore.setState({ pieces: [p32], connections: [], selectedId: 'n1', solo: false })
+    useStore.getState().nudge(0, -1) // toward the y=0 wall, 2" gap
+    expect(useStore.getState().pieces[0].y).toBe(0)
+  })
+})
+
 describe('room', () => {
   it('resizing scales the room polygon to the requested rectangle', () => {
     state().setRoomRect(240, 120)

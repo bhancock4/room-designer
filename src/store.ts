@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Conn, CustomSpec, Placed, Pt, Rot, BBox } from './types'
-import { bboxOf, unionBBox, worldShape } from './geometry'
-import { components, unitOf } from './connect'
+import { bboxOf, unionBBox, worldEdges, worldShape } from './geometry'
+import { components, findSnap, findWallSnap, unitOf } from './connect'
 import { shapeFor, isReversible } from './catalog'
 
 export interface Snapshot {
@@ -281,11 +281,38 @@ export const useStore = create<AppState>((set, get) => ({
     const scope = get().selectionScope()
     if (!scope.length) return
     get().push()
+    // same snapping as dragging, but only when moving TOWARD the snap target
+    // (dot > 0) so a nudge away from a flush edge doesn't stick
+    const idSet = new Set(scope.map((p) => p.id))
+    const movingEdges = scope.flatMap((p) =>
+      worldEdges(p.id, worldShape({ ...p, x: p.x + dx, y: p.y + dy }, shapeFor(p))),
+    )
+    const fixedEdges = get()
+      .pieces.filter((p) => !idSet.has(p.id))
+      .flatMap((p) => worldEdges(p.id, worldShape(p, shapeFor(p))))
+    let ax = dx
+    let ay = dy
+    let conn: [string, string] | null = null
+    const snap = findSnap(movingEdges, fixedEdges, 4)
+    if (snap && snap.dx * dx + snap.dy * dy > 0) {
+      ax += snap.dx
+      ay += snap.dy
+      if (snap.connects) conn = [snap.moving.pieceId, snap.fixed.pieceId]
+    } else {
+      const { room } = get()
+      const walls: [Pt, Pt][] = room.map((p, i) => [p, room[(i + 1) % room.length]])
+      const ws = findWallSnap(movingEdges, walls, 4)
+      if (ws && ws.dx * dx + ws.dy * dy > 0) {
+        ax += ws.dx
+        ay += ws.dy
+      }
+    }
     get().moveScope(
       scope.map((p) => p.id),
-      dx,
-      dy,
+      ax,
+      ay,
     )
+    if (conn) get().connect(conn[0], conn[1])
   },
   rotateSelection(dir) {
     const scope = get().selectionScope()
