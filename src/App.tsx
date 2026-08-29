@@ -3,7 +3,7 @@ import Canvas from './components/Canvas'
 import Palette from './components/Palette'
 import Inspector from './components/Inspector'
 import SpecSheet from './components/SpecSheet'
-import { useStore } from './store'
+import { stepOptionsWith, useStore } from './store'
 import { PRESETS } from './presets'
 import {
   deleteNamed,
@@ -43,6 +43,7 @@ export default function App() {
   const store = useStore()
   const [showSpec, setShowSpec] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [saves, setSaves] = useState<string[]>([])
   const [roomTpls, setRoomTpls] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
@@ -81,12 +82,13 @@ export default function App() {
       if (e.key === 'Escape') {
         if (showSpec) setShowSpec(false)
         else if (showHelp) setShowHelp(false)
+        else if (showSettings) setShowSettings(false)
         else if (s.editRoom) s.setEditRoom(false)
         else if (s.solo) s.select(s.selectedId, false)
         else s.select(null)
         return
       }
-      if (showSpec || showHelp) return
+      if (showSpec || showHelp || showSettings) return
       if (e.key === 'Tab') {
         e.preventDefault()
         s.tabSelect(e.shiftKey ? -1 : 1)
@@ -127,7 +129,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showSpec, showHelp])
+  }, [showSpec, showHelp, showSettings])
 
   function doSaveAs() {
     const name = prompt('Save configuration as:', 'living room v1')
@@ -148,10 +150,10 @@ export default function App() {
         <span className="brand">
           🛋 Sectional Planner <small>Cascade modular</small>
         </span>
-        <button onClick={() => store.undo()} title="Undo (⌘Z)">
+        <button onClick={() => store.undo()} disabled={store.past.length === 0} title="Undo (⌘Z)">
           ↩︎
         </button>
-        <button onClick={() => store.redo()} title="Redo (⇧⌘Z)">
+        <button onClick={() => store.redo()} disabled={store.future.length === 0} title="Redo (⇧⌘Z)">
           ↪︎
         </button>
         <span className="spacer" />
@@ -252,7 +254,11 @@ export default function App() {
           }}
         />
         <span className="spacer" />
-        <button onClick={() => store.toggleUnits()} title="Toggle dimension display: inches vs feet + inches">
+        <button
+          className="w-fixed"
+          onClick={() => store.toggleUnits()}
+          title="Toggle dimension display: inches vs feet + inches"
+        >
           📏 {store.units === 'in' ? 'inches' : 'ft + in'}
         </button>
         <button
@@ -265,6 +271,9 @@ export default function App() {
         <button className="primary" onClick={() => setShowSpec(true)}>
           📄 Spec Sheet / PDF
         </button>
+        <button onClick={() => setShowSettings(true)} title="Settings">
+          ⚙
+        </button>
         <button onClick={() => setShowHelp(true)} title="Hotkeys">
           ?
         </button>
@@ -275,6 +284,48 @@ export default function App() {
         <Inspector />
       </div>
       {showSpec && <SpecSheet onClose={() => setShowSpec(false)} />}
+      {showSettings && (
+        <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>⚙ Settings</h2>
+            <h3>Rotation steps</h3>
+            <div className="settings-row">
+              <label>
+                Couch pieces
+                <select
+                  value={store.rotStepPieces}
+                  onChange={(e) => store.setRotSteps(Number(e.target.value), store.rotStepShapes)}
+                >
+                  {stepOptionsWith(store.rotStepPieces).map((v) => (
+                    <option key={v} value={v}>
+                      {v}°
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Shapes &amp; objects
+                <select
+                  value={store.rotStepShapes}
+                  onChange={(e) => store.setRotSteps(store.rotStepPieces, Number(e.target.value))}
+                >
+                  {stepOptionsWith(store.rotStepShapes).map((v) => (
+                    <option key={v} value={v}>
+                      {v}°
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="hint">
+              R and ⌘-arrows rotate by these steps. A selected piece can override its own step in the side panel.
+            </p>
+            <button className="primary" onClick={() => setShowSettings(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
       {showHelp && (
         <div className="modal-backdrop" onClick={() => setShowHelp(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>

@@ -33,6 +33,12 @@ export function effectiveRotStep(p: Placed, s: { rotStepPieces: number; rotStepS
   return p.rotStep ?? (p.custom ? s.rotStepShapes : s.rotStepPieces)
 }
 
+export const STEP_OPTIONS = [1, 5, 10, 15, 22.5, 30, 45, 90, 180]
+
+export function stepOptionsWith(current: number): number[] {
+  return STEP_OPTIONS.includes(current) ? STEP_OPTIONS : [...STEP_OPTIONS, current].sort((a, b) => a - b)
+}
+
 export function defaultRoom(w = 300, h = 300): Pt[] {
   return [
     { x: 0, y: 0 },
@@ -184,9 +190,14 @@ export const useStore = create<AppState>((set, get) => ({
   },
   resizeCustom(id, w, d) {
     set((s) => ({
-      pieces: s.pieces.map((p) =>
-        p.id === id && p.custom ? { ...p, custom: { ...p.custom, w: Math.max(4, w), d: Math.max(4, d) } } : p,
-      ),
+      pieces: s.pieces.map((p) => {
+        if (p.id !== id || !p.custom) return p
+        if (p.custom.circle) {
+          const size = Math.max(4, Math.max(w, d))
+          return { ...p, custom: { ...p.custom, w: size, d: size } }
+        }
+        return { ...p, custom: { ...p.custom, w: Math.max(4, w), d: Math.max(4, d) } }
+      }),
     }))
   },
   setCustomSides(id, sides) {
@@ -336,9 +347,15 @@ export const useStore = create<AppState>((set, get) => ({
   setCustomDims(id, w, d) {
     get().push()
     set((s) => ({
-      pieces: s.pieces.map((p) =>
-        p.id === id && p.custom ? { ...p, custom: { ...p.custom, w: Math.max(1, w), d: Math.max(1, d) } } : p,
-      ),
+      pieces: s.pieces.map((p) => {
+        if (p.id !== id || !p.custom) return p
+        if (p.custom.circle) {
+          // whichever dimension the user changed drives both
+          const size = Math.max(1, w !== p.custom.w ? w : d)
+          return { ...p, custom: { ...p.custom, w: size, d: size } }
+        }
+        return { ...p, custom: { ...p.custom, w: Math.max(1, w), d: Math.max(1, d) } }
+      }),
     }))
   },
 

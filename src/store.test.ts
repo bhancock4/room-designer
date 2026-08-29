@@ -178,6 +178,25 @@ describe('rotation steps and polygons', () => {
   })
 })
 
+describe('circles stay circular', () => {
+  it('resizing or editing a circle keeps w and d locked', () => {
+    state().addCustom({ kind: 'ellipse', w: 36, d: 36, circle: true })
+    const c = state().pieces[state().pieces.length - 1]
+    state().resizeCustom(c.id, 50, 41)
+    let cur = state().pieces.find((p) => p.id === c.id)!.custom!
+    expect([cur.w, cur.d]).toEqual([50, 50])
+    state().setCustomDims(c.id, cur.w, 28) // user edits one field
+    cur = state().pieces.find((p) => p.id === c.id)!.custom!
+    expect([cur.w, cur.d]).toEqual([28, 28])
+    // ovals (no circle flag) still resize freely
+    state().addCustom({ kind: 'ellipse', w: 48, d: 30 })
+    const o = state().pieces[state().pieces.length - 1]
+    state().resizeCustom(o.id, 60, 20)
+    const oc = state().pieces.find((p) => p.id === o.id)!.custom!
+    expect([oc.w, oc.d]).toEqual([60, 20])
+  })
+})
+
 describe('shapes never attach to couches', () => {
   it('connect() refuses when either side is a custom object', () => {
     state().addCustom({ kind: 'poly', w: 36, d: 36, sides: 4 })

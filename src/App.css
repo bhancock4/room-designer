@@ -36,6 +36,22 @@ body,
 .spacer {
   flex: 1;
 }
+.toolbar button.w-fixed {
+  width: 96px;
+  text-align: center;
+}
+.settings-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.settings-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b5f52;
+}
 button,
 select {
   font: inherit;

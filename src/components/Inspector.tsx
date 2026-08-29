@@ -1,12 +1,6 @@
 import { defFor, displayCode, isReversible, unitSeats } from '../catalog'
 import { fmtLen, bboxOf } from '../geometry'
-import { pieceBBox, unitBBox, useStore } from '../store'
-
-const STEP_OPTIONS = [1, 5, 10, 15, 22.5, 30, 45, 90, 180]
-
-function stepOptionsWith(current: number): number[] {
-  return STEP_OPTIONS.includes(current) ? STEP_OPTIONS : [...STEP_OPTIONS, current].sort((a, b) => a - b)
-}
+import { pieceBBox, unitBBox, useStore, STEP_OPTIONS } from '../store'
 
 /** Feet + inches input pair for a length stored in inches. */
 function FtInRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
@@ -89,24 +83,41 @@ export default function Inspector() {
           </label>
           {sel.custom && (
             <div className="row">
-              <label>
-                W (in)
-                <input
-                  type="number"
-                  value={sel.custom.w}
-                  min={1}
-                  onChange={(e) => store.setCustomDims(sel.id, Number(e.target.value) || 1, sel.custom!.d)}
-                />
-              </label>
-              <label>
-                D (in)
-                <input
-                  type="number"
-                  value={sel.custom.d}
-                  min={1}
-                  onChange={(e) => store.setCustomDims(sel.id, sel.custom!.w, Number(e.target.value) || 1)}
-                />
-              </label>
+              {sel.custom.circle ? (
+                <label>
+                  Diameter (in)
+                  <input
+                    type="number"
+                    value={sel.custom.w}
+                    min={1}
+                    onChange={(e) => {
+                      const v = Number(e.target.value) || 1
+                      store.setCustomDims(sel.id, v, v)
+                    }}
+                  />
+                </label>
+              ) : (
+                <>
+                  <label>
+                    W (in)
+                    <input
+                      type="number"
+                      value={sel.custom.w}
+                      min={1}
+                      onChange={(e) => store.setCustomDims(sel.id, Number(e.target.value) || 1, sel.custom!.d)}
+                    />
+                  </label>
+                  <label>
+                    D (in)
+                    <input
+                      type="number"
+                      value={sel.custom.d}
+                      min={1}
+                      onChange={(e) => store.setCustomDims(sel.id, sel.custom!.w, Number(e.target.value) || 1)}
+                    />
+                  </label>
+                </>
+              )}
               {sel.custom.kind === 'poly' && (
                 <label>
                   Sides
@@ -187,32 +198,6 @@ export default function Inspector() {
         </div>
       )}
 
-      <div className="panel">
-        <div className="panel-head">Rotation defaults</div>
-        <div className="row">
-          <label>
-            Couch
-            <select value={store.rotStepPieces} onChange={(e) => store.setRotSteps(Number(e.target.value), store.rotStepShapes)}>
-              {stepOptionsWith(store.rotStepPieces).map((v) => (
-                <option key={v} value={v}>
-                  {v}°
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Shapes
-            <select value={store.rotStepShapes} onChange={(e) => store.setRotSteps(store.rotStepPieces, Number(e.target.value))}>
-              {stepOptionsWith(store.rotStepShapes).map((v) => (
-                <option key={v} value={v}>
-                  {v}°
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="hint">R / ⌘-arrows rotate by these steps; override per piece above when one is selected.</div>
-      </div>
     </div>
   )
 }

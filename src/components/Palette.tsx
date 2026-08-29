@@ -43,8 +43,8 @@ const SECTIONS: { key: 'SOFAS' | 'SECTIONALS' | 'OTTOS'; label: string }[] = [
   { key: 'OTTOS', label: 'Ottos' },
 ]
 
-const OBJECTS: { label: string; c: { kind: 'ellipse' | 'door'; w: number; d: number } }[] = [
-  { label: 'Circle', c: { kind: 'ellipse', w: 36, d: 36 } },
+const OBJECTS: { label: string; c: { kind: 'ellipse' | 'door'; w: number; d: number; circle?: boolean } }[] = [
+  { label: 'Circle', c: { kind: 'ellipse', w: 36, d: 36, circle: true } },
   { label: 'Oval', c: { kind: 'ellipse', w: 48, d: 30 } },
   { label: 'Door', c: { kind: 'door', w: 32, d: 5 } },
 ]

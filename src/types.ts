@@ -37,6 +37,8 @@ export interface CustomSpec {
   d: number
   /** number of sides for kind 'poly' (3..24); 4 = rectangle */
   sides?: number
+  /** true for circles: w and d stay locked together */
+  circle?: boolean
 }
 
 /** rotation in degrees, clockwise, any angle */
