@@ -51,6 +51,31 @@ describe('rotateShape', () => {
     const r = rotateShape(oneArmLeft, 270)
     expect(kindOfEdgeAt(r, (a, b) => a.x === 0 && b.x === 0)).toBe('back')
   })
+
+  it('quarter turns stay exact integers (no float drift)', () => {
+    const r = rotateShape(oneArmLeft, 90)
+    for (const p of r.pts) {
+      expect(Number.isInteger(p.x)).toBe(true)
+      expect(Number.isInteger(p.y)).toBe(true)
+    }
+  })
+
+  it('supports arbitrary angles: a 45-degree square bbox grows by sqrt(2)', () => {
+    const sq: Shape = {
+      pts: [
+        { x: 0, y: 0 },
+        { x: 40, y: 0 },
+        { x: 40, y: 40 },
+        { x: 0, y: 40 },
+      ],
+      kinds: ['open', 'open', 'open', 'open'],
+    }
+    const bb = bboxOf(rotateShape(sq, 45).pts)
+    expect(bb.w).toBeCloseTo(40 * Math.SQRT2, 5)
+    expect(bb.h).toBeCloseTo(40 * Math.SQRT2, 5)
+    expect(bb.x).toBeCloseTo(0)
+    expect(bb.y).toBeCloseTo(0)
+  })
 })
 
 describe('worldShape', () => {

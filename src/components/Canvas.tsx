@@ -17,12 +17,21 @@ type DragState =
   | { mode: 'pan'; startScreen: Pt; origView: View }
   | { mode: 'vertex'; index: number; pushed: boolean }
   | { mode: 'edge'; index: number; start: Pt; origRoom: Pt[]; pushed: boolean }
+  | { mode: 'resize'; id: string; start: Pt; origW: number; origD: number; rot: number; reversed: boolean; pushed: boolean }
 
 const CAT_FILL: Record<string, string> = {
   SOFAS: '#f5ecda',
   SECTIONALS: '#f5ecda',
   OTTOS: '#ece3d0',
   OBJECTS: '#dfe9ef',
+}
+
+function safeCapture(e: React.PointerEvent) {
+  try {
+    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+  } catch {
+    /* stale or synthetic pointer — capture is best-effort */
+  }
 }
 
 export function geometryOf(p: Placed) {
@@ -40,6 +49,27 @@ export default function Canvas() {
   const dragRef = useRef<DragState | null>(null)
   const [snapHint, setSnapHint] = useState<{ a: WorldEdge; b: WorldEdge } | null>(null)
   const userZoomed = useRef(false)
+  const spaceHeld = useRef(false)
+
+  // hold Space (or use middle mouse) to pan — plain background drags no longer move the view
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (e.code === 'Space' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        spaceHeld.current = true
+        e.preventDefault()
+      }
+    }
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space') spaceHeld.current = false
+    }
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+    }
+  }, [])
 
   const roomBB = useMemo(() => bboxOf(room), [room])
   const F = (v: number) => fmtLen(v, store.units)
@@ -122,7 +152,7 @@ export default function Canvas() {
   function onPiecePointerDown(e: React.PointerEvent, p: Placed) {
     if (editRoom) return
     e.stopPropagation()
-    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+    safeCapture(e)
     const wantSolo = solo && selectedId === p.id ? true : e.altKey
     store.select(p.id, wantSolo)
     const scopeIds = wantSolo ? [p.id] : unitOf(p.id, pieces.map((q) => q.id), connections)
@@ -133,8 +163,12 @@ export default function Canvas() {
 
   function onBackgroundPointerDown(e: React.PointerEvent) {
     if (editRoom) return
-    ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
-    dragRef.current = { mode: 'pan', startScreen: { x: e.clientX, y: e.clientY }, origView: view }
+    if (spaceHeld.current || e.button === 1) {
+      safeCapture(e)
+      dragRef.current = { mode: 'pan', startScreen: { x: e.clientX, y: e.clientY }, origView: view }
+      return
+    }
+    store.select(null)
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -145,6 +179,21 @@ export default function Canvas() {
       const dy = e.clientY - d.startScreen.y
       if (Math.hypot(dx, dy) > 2) userZoomed.current = true
       setView({ ...d.origView, tx: d.origView.tx + dx, ty: d.origView.ty + dy })
+      return
+    }
+    if (d.mode === 'resize') {
+      if (!d.pushed) {
+        store.push()
+        d.pushed = true
+      }
+      const w = toWorld(e)
+      const rad = (-d.rot * Math.PI) / 180
+      const cos = Math.cos(rad)
+      const sin = Math.sin(rad)
+      let ldx = (w.x - d.start.x) * cos - (w.y - d.start.y) * sin
+      const ldy = (w.x - d.start.x) * sin + (w.y - d.start.y) * cos
+      if (d.reversed) ldx = -ldx
+      store.resizeCustom(d.id, Math.round(d.origW + ldx), Math.round(d.origD + ldy))
       return
     }
     if (d.mode === 'vertex') {
@@ -235,12 +284,6 @@ export default function Canvas() {
     if (d?.mode === 'piece' && d.moved && snapHint) {
       store.connect(snapHint.a.pieceId, snapHint.b.pieceId)
     }
-    if (d?.mode === 'pan') {
-      // click on empty space without movement = deselect
-      const dvx = Math.abs(view.tx - d.origView.tx)
-      const dvy = Math.abs(view.ty - d.origView.ty)
-      if (dvx < 3 && dvy < 3) store.select(null)
-    }
     setSnapHint(null)
   }
 
@@ -300,26 +343,16 @@ export default function Canvas() {
           // thin jambs are hard to grab — invisible padded hit area
           <rect x={bb.x - 6} y={bb.y - 6} width={bb.w + 12} height={bb.h + 12} fill="rgba(0,0,0,0.001)" />
         )}
-        {p.custom?.kind === 'ellipse' ? (
-          <ellipse
-            cx={bb.x + bb.w / 2}
-            cy={bb.y + bb.h / 2}
-            rx={bb.w / 2}
-            ry={bb.h / 2}
-            fill={overlapped ? '#f6d7d2' : fill}
-            stroke={stroke}
-            strokeWidth={(isSel ? 2.5 : 1.5) / s}
-            vectorEffect="non-scaling-stroke"
-          />
-        ) : (
-          <path
-            d={pathOf(pts)}
-            fill={overlapped ? '#f6d7d2' : fill}
-            stroke={stroke}
-            strokeWidth={isSel ? 2.5 : 1.5}
-            vectorEffect="non-scaling-stroke"
-            strokeLinejoin="round"
-          />
+        <path
+          d={pathOf(pts)}
+          fill={overlapped ? '#f6d7d2' : fill}
+          stroke={stroke}
+          strokeWidth={isSel ? 2.5 : 1.5}
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+        />
+        {p.custom?.kind === 'poly' && (
+          <title>{`${p.custom.sides ?? 4}-sided polygon`}</title>
         )}
         {/* back & arm bands, open-edge ticks */}
         {g.edges.map((e, i) => {
@@ -464,6 +497,39 @@ export default function Canvas() {
           {/* pieces: unselected first so selected renders on top */}
           {pieces.filter((p) => !selectedUnit?.includes(p.id)).map(renderPiece)}
           {pieces.filter((p) => selectedUnit?.includes(p.id)).map(renderPiece)}
+          {/* resize anchor for selected custom objects */}
+          {(() => {
+            const sel = pieces.find((p) => p.id === selectedId)
+            if (!sel?.custom || editRoom) return null
+            const bb = pieceBBox(sel)
+            const hs = 11 / s
+            return (
+              <rect
+                x={bb.x + bb.w - hs / 2}
+                y={bb.y + bb.h - hs / 2}
+                width={hs}
+                height={hs}
+                fill="#fff"
+                stroke="#2b7de9"
+                strokeWidth={2 / s}
+                style={{ cursor: 'nwse-resize' }}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                  safeCapture(e)
+                  dragRef.current = {
+                    mode: 'resize',
+                    id: sel.id,
+                    start: toWorld(e),
+                    origW: sel.custom!.w,
+                    origD: sel.custom!.d,
+                    rot: sel.rot,
+                    reversed: sel.reversed,
+                    pushed: false,
+                  }
+                }}
+              />
+            )
+          })()}
           {/* unit dimension lines: all multi-piece units + selected unit */}
           {units
             .filter((u) => u.length > 1 || (selectedUnit && u[0] === selectedUnit[0]))
@@ -537,7 +603,7 @@ export default function Canvas() {
                   style={{ cursor: 'move' }}
                   onPointerDown={(e) => {
                     e.stopPropagation()
-                    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+                    safeCapture(e)
                     dragRef.current = { mode: 'edge', index: i, start: toWorld(e), origRoom: room.map((p) => ({ ...p })), pushed: false }
                   }}
                   onDoubleClick={(e) => onRoomEdgeDoubleClick(e, i)}
@@ -560,7 +626,7 @@ export default function Canvas() {
                       store.setRoom(room.filter((_, j) => j !== i))
                       return
                     }
-                    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+                    safeCapture(e)
                     dragRef.current = { mode: 'vertex', index: i, pushed: false }
                   }}
                 />

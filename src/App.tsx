@@ -5,7 +5,20 @@ import Inspector from './components/Inspector'
 import SpecSheet from './components/SpecSheet'
 import { useStore } from './store'
 import { PRESETS } from './presets'
-import { deleteNamed, exportJSON, importJSON, listSaves, loadAuto, loadNamed, saveAuto, saveNamed } from './storage'
+import {
+  deleteNamed,
+  deleteRoomTemplate,
+  exportJSON,
+  importJSON,
+  listRoomTemplates,
+  listSaves,
+  loadAuto,
+  loadNamed,
+  loadRoomTemplate,
+  saveAuto,
+  saveNamed,
+  saveRoomTemplate,
+} from './storage'
 import './App.css'
 
 const HOTKEYS: [string, string][] = [
@@ -15,7 +28,8 @@ const HOTKEYS: [string, string][] = [
   ['Drag', 'Move — green edges glow when a snap-connect is possible'],
   ['Arrows / Shift+Arrows', 'Nudge 1″ / 12″'],
   ['R / Shift+R', 'Rotate 90° CW / CCW'],
-  ['⌘→ / ⌘← (Cmd+Arrows)', 'Rotate 90° CW / CCW (Ctrl works too)'],
+  ['⌘→ / ⌘← (Cmd+Arrows)', 'Rotate CW / CCW by the piece’s step (couch 90°, shapes 22.5° by default)'],
+  ['Space+drag / middle-drag', 'Pan the view (plain background drag no longer pans)'],
   ['F or ⌥Arrow (Option+Arrow)', 'Reverse (flip L↔R) — reversible pieces & whole units'],
   ['U', 'Detach selected piece from its unit'],
   ['D', 'Duplicate selection'],
@@ -30,6 +44,7 @@ export default function App() {
   const [showSpec, setShowSpec] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [saves, setSaves] = useState<string[]>([])
+  const [roomTpls, setRoomTpls] = useState<string[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
   const booted = useRef(false)
 
@@ -40,6 +55,7 @@ export default function App() {
     const auto = loadAuto()
     if (auto && auto.pieces) useStore.setState({ ...auto })
     setSaves(listSaves())
+    setRoomTpls(listRoomTemplates())
   }, [])
 
   // autosave
@@ -190,6 +206,40 @@ export default function App() {
           ⇩ Export
         </button>
         <button onClick={() => fileRef.current?.click()}>⇧ Import</button>
+        <select
+          value=""
+          title="Room templates: save your room shape + fixed objects (doors, tables) and reuse it across couch configs"
+          onChange={(e) => {
+            const v = e.target.value
+            e.target.value = ''
+            if (v === 'save') {
+              const name = prompt('Save room (shape + objects) as template:', 'our living room')
+              if (!name) return
+              const { room, pieces } = useStore.getState()
+              saveRoomTemplate(name, { room, objects: pieces.filter((p) => p.custom) })
+              setRoomTpls(listRoomTemplates())
+            } else if (v.startsWith('load:')) {
+              const t = loadRoomTemplate(v.slice(5))
+              if (t) store.applyRoomTemplate(t.room, t.objects)
+            } else if (v.startsWith('del:')) {
+              deleteRoomTemplate(v.slice(4))
+              setRoomTpls(listRoomTemplates())
+            }
+          }}
+        >
+          <option value="">🏠 Rooms…</option>
+          <option value="save">💾 Save current room as template</option>
+          {roomTpls.map((n) => (
+            <option key={n} value={`load:${n}`}>
+              {n}
+            </option>
+          ))}
+          {roomTpls.map((n) => (
+            <option key={`d${n}`} value={`del:${n}`}>
+              🗑 delete “{n}”
+            </option>
+          ))}
+        </select>
         <input
           ref={fileRef}
           type="file"

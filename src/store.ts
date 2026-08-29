@@ -15,6 +15,24 @@ export function newId(): string {
   return `p${Date.now().toString(36)}${(idCounter++).toString(36)}`
 }
 
+function loadNum(key: string, dflt: number): number {
+  try {
+    const v = Number(localStorage.getItem(key))
+    return v > 0 ? v : dflt
+  } catch {
+    return dflt
+  }
+}
+
+function clampStep(v: number, dflt: number): number {
+  return v > 0 && v <= 180 ? v : dflt
+}
+
+/** Rotation step for a piece: its own override, else the shape/couch default. */
+export function effectiveRotStep(p: Placed, s: { rotStepPieces: number; rotStepShapes: number }): number {
+  return p.rotStep ?? (p.custom ? s.rotStepShapes : s.rotStepPieces)
+}
+
 export function defaultRoom(w = 216, h = 150): Pt[] {
   return [
     { x: 0, y: 0 },
@@ -66,6 +84,13 @@ interface AppState extends Snapshot {
   showClearance: boolean
   toggleClearance(): void
   setLayout(pieces: Placed[], connections: Conn[]): void
+  rotStepPieces: number
+  rotStepShapes: number
+  setRotSteps(pieces: number, shapes: number): void
+  setPieceRotStep(id: string, step: number | undefined): void
+  resizeCustom(id: string, w: number, d: number): void
+  setCustomSides(id: string, sides: number): void
+  applyRoomTemplate(room: Pt[], objects: Placed[]): void
   past: Snapshot[]
   future: Snapshot[]
 
@@ -134,6 +159,59 @@ export const useStore = create<AppState>((set, get) => ({
   setLayout(pieces, connections) {
     get().push()
     set({ pieces, connections, selectedId: null, solo: false })
+  },
+  rotStepPieces: loadNum('couch-planner:v1:rotPieces', 90),
+  rotStepShapes: loadNum('couch-planner:v1:rotShapes', 22.5),
+  setRotSteps(pieces, shapes) {
+    const rp = clampStep(pieces, 90)
+    const rs = clampStep(shapes, 22.5)
+    try {
+      localStorage.setItem('couch-planner:v1:rotPieces', String(rp))
+      localStorage.setItem('couch-planner:v1:rotShapes', String(rs))
+    } catch {
+      /* ignore */
+    }
+    set({ rotStepPieces: rp, rotStepShapes: rs })
+  },
+  setPieceRotStep(id, step) {
+    set((s) => ({
+      pieces: s.pieces.map((p) =>
+        p.id === id ? { ...p, rotStep: step === undefined ? undefined : clampStep(step, 90) } : p,
+      ),
+    }))
+  },
+  resizeCustom(id, w, d) {
+    set((s) => ({
+      pieces: s.pieces.map((p) =>
+        p.id === id && p.custom ? { ...p, custom: { ...p.custom, w: Math.max(4, w), d: Math.max(4, d) } } : p,
+      ),
+    }))
+  },
+  setCustomSides(id, sides) {
+    get().push()
+    set((s) => ({
+      pieces: s.pieces.map((p) =>
+        p.id === id && p.custom?.kind === 'poly'
+          ? { ...p, custom: { ...p.custom, sides: Math.min(24, Math.max(3, Math.round(sides) || 4)) } }
+          : p,
+      ),
+    }))
+  },
+  applyRoomTemplate(room, objects) {
+    get().push()
+    const idMap = new Map(objects.map((o) => [o.id, newId()]))
+    const fresh = objects.map((o) => ({ ...structuredClone(o), id: idMap.get(o.id)! }))
+    set((s) => {
+      const couches = s.pieces.filter((p) => !p.custom)
+      const keep = new Set(couches.map((p) => p.id))
+      return {
+        room: structuredClone(room),
+        pieces: [...couches, ...fresh],
+        connections: s.connections.filter((c) => keep.has(c.a) && keep.has(c.b)),
+        selectedId: null,
+        solo: false,
+      }
+    })
   },
   past: [],
   future: [],
@@ -319,25 +397,32 @@ export const useStore = create<AppState>((set, get) => ({
     if (!scope.length) return
     get().push()
     if (get().solo && scope.length === 1) get().detachPiece(scope[0].id)
+    const anchor = scope.find((p) => p.id === get().selectedId) ?? scope[0]
+    const theta = dir * effectiveRotStep(anchor, get())
     const bb = unitBBox(scope)
     const cx = bb.x + bb.w / 2
     const cy = bb.y + bb.h / 2
+    const rad = (theta * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
     const ids = new Set(scope.map((p) => p.id))
     set((s) => ({
       pieces: s.pieces.map((p) => {
         if (!ids.has(p.id)) return p
+        // rotate the piece's bbox center about the scope center, re-derive top-left
         const pb = pieceBBox(p)
-        let nx: number, ny: number
-        if (dir === 1) {
-          // 90 CW about (cx, cy): (x,y) -> (cx + cy - y, cy - cx + x); new top-left from old corner
-          nx = cx + cy - (pb.y + pb.h)
-          ny = cy - cx + pb.x
-        } else {
-          nx = cx - cy + pb.y
-          ny = cy + cx - (pb.x + pb.w)
+        const pcx = pb.x + pb.w / 2
+        const pcy = pb.y + pb.h / 2
+        const ncx = cx + (pcx - cx) * cos - (pcy - cy) * sin
+        const ncy = cy + (pcx - cx) * sin + (pcy - cy) * cos
+        const rot = (((p.rot + theta) % 360) + 360) % 360 as Rot
+        const nb = bboxOf(worldShape({ ...p, rot, x: 0, y: 0 }, shapeFor(p)).pts)
+        return {
+          ...p,
+          rot,
+          x: Math.round((ncx - nb.w / 2) * 2) / 2,
+          y: Math.round((ncy - nb.h / 2) * 2) / 2,
         }
-        const rot = (((p.rot + (dir === 1 ? 90 : 270)) % 360) + 360) % 360
-        return { ...p, x: Math.round(nx * 2) / 2, y: Math.round(ny * 2) / 2, rot: rot as Rot }
       }),
     }))
   },

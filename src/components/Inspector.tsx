@@ -1,6 +1,6 @@
 import { defFor, displayCode, isReversible, unitSeats } from '../catalog'
 import { fmtLen, bboxOf } from '../geometry'
-import { pieceBBox, unitBBox, useStore } from '../store'
+import { effectiveRotStep, pieceBBox, unitBBox, useStore } from '../store'
 
 export default function Inspector() {
   const store = useStore()
@@ -90,8 +90,35 @@ export default function Inspector() {
                   onChange={(e) => store.setCustomDims(sel.id, sel.custom!.w, Number(e.target.value) || 1)}
                 />
               </label>
+              {sel.custom.kind === 'poly' && (
+                <label>
+                  Sides
+                  <input
+                    type="number"
+                    min={3}
+                    max={24}
+                    value={sel.custom.sides ?? 4}
+                    onChange={(e) => store.setCustomSides(sel.id, Number(e.target.value) || 4)}
+                  />
+                </label>
+              )}
             </div>
           )}
+          {sel.custom && <div className="hint">Drag the blue corner anchor on the canvas to resize.</div>}
+          <label className="stack">
+            Rotate step for this piece (°) — blank uses the default ({sel.custom ? store.rotStepShapes : store.rotStepPieces}°)
+            <input
+              type="number"
+              min={1}
+              max={180}
+              step="any"
+              value={sel.rotStep ?? ''}
+              placeholder={String(effectiveRotStep(sel, store))}
+              onChange={(e) =>
+                store.setPieceRotStep(sel.id, e.target.value === '' ? undefined : Number(e.target.value))
+              }
+            />
+          </label>
           <div className="btn-grid">
             <button onClick={() => store.rotateSelection(1)} title="Rotate 90° clockwise (R)">
               ⟳ Rotate
@@ -128,10 +155,39 @@ export default function Inspector() {
           <div className="panel-head">Nothing selected</div>
           <div className="hint">
             Click a piece to select its unit · ⌥-click or double-click for a single piece · Tab cycles units · drag
-            pieces near a green dashed edge to snap &amp; connect.
+            pieces near a green dashed edge to snap &amp; connect · Space+drag pans.
           </div>
         </div>
       )}
+
+      <div className="panel">
+        <div className="panel-head">Rotation defaults</div>
+        <div className="row">
+          <label>
+            Couch (°)
+            <input
+              type="number"
+              min={1}
+              max={180}
+              step="any"
+              value={store.rotStepPieces}
+              onChange={(e) => store.setRotSteps(Number(e.target.value), store.rotStepShapes)}
+            />
+          </label>
+          <label>
+            Shapes (°)
+            <input
+              type="number"
+              min={1}
+              max={180}
+              step="any"
+              value={store.rotStepShapes}
+              onChange={(e) => store.setRotSteps(store.rotStepPieces, Number(e.target.value))}
+            />
+          </label>
+        </div>
+        <div className="hint">R / ⌘-arrows rotate by these steps; override per piece above when one is selected.</div>
+      </div>
     </div>
   )
 }

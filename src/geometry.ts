@@ -27,16 +27,26 @@ export function mirrorShape(s: Shape): Shape {
   return { pts, kinds, decor }
 }
 
-/** Rotate clockwise by rot (multiple of 90), then normalize so bbox min corner is (0,0). */
+/** Rotate clockwise by rot degrees (any angle), then normalize so bbox min corner is (0,0). */
 export function rotateShape(s: Shape, rot: number): Shape {
-  const steps = ((rot % 360) + 360) / 90 % 4
-  const r90 = (p: Pt): Pt => ({ x: -p.y, y: p.x })
-  let pts = s.pts
-  let decor = s.decor
-  for (let i = 0; i < steps; i++) {
-    pts = pts.map(r90)
-    decor = decor?.map((line) => line.map(r90))
+  const deg = ((rot % 360) + 360) % 360
+  let rp: (p: Pt) => Pt
+  if (deg % 90 === 0) {
+    // exact integer path for quarter turns — no float drift
+    const steps = deg / 90
+    rp = (p) => {
+      let q = p
+      for (let i = 0; i < steps; i++) q = { x: -q.y, y: q.x }
+      return q
+    }
+  } else {
+    const r = (deg * Math.PI) / 180
+    const cos = Math.cos(r)
+    const sin = Math.sin(r)
+    rp = (p) => ({ x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos })
   }
+  const pts = s.pts.map(rp)
+  const decor = s.decor?.map((line) => line.map(rp))
   const bb = bboxOf(pts)
   const shift = (p: Pt): Pt => ({ x: p.x - bb.x, y: p.y - bb.y })
   return { pts: pts.map(shift), kinds: s.kinds, decor: decor?.map((line) => line.map(shift)) }

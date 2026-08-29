@@ -1,7 +1,14 @@
 import type { Snapshot } from './store'
+import type { Placed, Pt } from './types'
 
 const AUTO_KEY = 'couch-planner:v1:auto'
 const SAVES_KEY = 'couch-planner:v1:saves'
+const ROOMS_KEY = 'couch-planner:v1:rooms'
+
+export interface RoomTemplate {
+  room: Pt[]
+  objects: Placed[] // custom objects only (doors, tables…) — no couch pieces
+}
 
 export function loadAuto(): Snapshot | null {
   try {
@@ -47,6 +54,35 @@ export function deleteNamed(name: string): void {
   const all = JSON.parse(localStorage.getItem(SAVES_KEY) || '{}')
   delete all[name]
   localStorage.setItem(SAVES_KEY, JSON.stringify(all))
+}
+
+export function listRoomTemplates(): string[] {
+  try {
+    return Object.keys(JSON.parse(localStorage.getItem(ROOMS_KEY) || '{}')).sort()
+  } catch {
+    return []
+  }
+}
+
+export function saveRoomTemplate(name: string, t: RoomTemplate): void {
+  const all = JSON.parse(localStorage.getItem(ROOMS_KEY) || '{}')
+  all[name] = t
+  localStorage.setItem(ROOMS_KEY, JSON.stringify(all))
+}
+
+export function loadRoomTemplate(name: string): RoomTemplate | null {
+  try {
+    const all = JSON.parse(localStorage.getItem(ROOMS_KEY) || '{}')
+    return all[name] ?? null
+  } catch {
+    return null
+  }
+}
+
+export function deleteRoomTemplate(name: string): void {
+  const all = JSON.parse(localStorage.getItem(ROOMS_KEY) || '{}')
+  delete all[name]
+  localStorage.setItem(ROOMS_KEY, JSON.stringify(all))
 }
 
 export function exportJSON(s: Snapshot): void {

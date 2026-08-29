@@ -134,6 +134,24 @@ button:disabled {
   gap: 2px;
   padding: 6px;
 }
+.poly-adder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.sides-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #6b5f52;
+}
+.sides-label input {
+  width: 44px;
+  font-size: 12px;
+  padding: 2px 4px;
+}
 .palette-note {
   font-size: 11px;
   color: #6b5f52;

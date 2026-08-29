@@ -32,12 +32,15 @@ export interface PieceDef {
 }
 
 export interface CustomSpec {
-  kind: 'rect' | 'ellipse' | 'door'
+  kind: 'rect' | 'ellipse' | 'door' | 'poly'
   w: number
   d: number
+  /** number of sides for kind 'poly' (3..24); 4 = rectangle */
+  sides?: number
 }
 
-export type Rot = 0 | 90 | 180 | 270
+/** rotation in degrees, clockwise, any angle */
+export type Rot = number
 
 export interface Placed {
   id: string
@@ -48,6 +51,8 @@ export interface Placed {
   y: number
   rot: Rot
   reversed: boolean
+  /** per-piece rotation step override in degrees (else category default applies) */
+  rotStep?: number
 }
 
 export interface Conn {

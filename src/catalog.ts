@@ -206,8 +206,28 @@ export function customShape(c: CustomSpec): Shape {
       kinds: ['open', 'open', 'open', 'open'],
     }
   }
+  if (c.kind === 'poly') {
+    // regular n-gon scaled to exactly fill the w x d box; 4 sides = rectangle
+    const n = Math.min(24, Math.max(3, Math.round(c.sides ?? 4)))
+    const raw: { x: number; y: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const t = ((i / n) * 360 - 90 + 180 / n) * (Math.PI / 180)
+      raw.push({ x: Math.cos(t), y: Math.sin(t) })
+    }
+    const xs = raw.map((p) => p.x)
+    const ys = raw.map((p) => p.y)
+    const minX = Math.min(...xs)
+    const minY = Math.min(...ys)
+    const sx = c.w / (Math.max(...xs) - minX)
+    const sy = c.d / (Math.max(...ys) - minY)
+    const pts = raw.map((p) => ({
+      x: Math.round((p.x - minX) * sx * 100) / 100,
+      y: Math.round((p.y - minY) * sy * 100) / 100,
+    }))
+    return { pts, kinds: pts.map(() => 'open' as EdgeKind) }
+  }
   // ellipse approximated by a polygon; edges not connectable
-  const N = 24
+  const N = 48
   const pts = []
   for (let i = 0; i < N; i++) {
     const t = (i / N) * Math.PI * 2
@@ -225,7 +245,10 @@ export function shapeFor(p: Placed): Shape {
 
 /** Display code with handedness reflecting the reversed flag (11L reversed -> 11R). */
 export function displayCode(p: Placed): string {
-  if (p.custom) return p.label || (p.custom.kind === 'rect' ? 'Box' : p.custom.kind === 'door' ? 'Door' : 'Oval')
+  if (p.custom) {
+    if (p.label) return p.label
+    return { rect: 'Box', door: 'Door', poly: 'Polygon', ellipse: 'Oval' }[p.custom.kind]
+  }
   const d = catalogById.get(p.defId!)!
   if (!d.hand) return d.code
   const hand = p.reversed ? (d.hand === 'L' ? 'R' : 'L') : d.hand

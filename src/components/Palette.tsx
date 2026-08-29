@@ -1,7 +1,41 @@
+import { useState } from 'react'
 import { CATALOG } from '../catalog'
 import { fmtLen } from '../geometry'
 import { useStore } from '../store'
 import PieceGlyph from './PieceGlyph'
+
+function PolygonAdder() {
+  const addCustom = useStore((s) => s.addCustom)
+  const [sides, setSides] = useState(4)
+  const pts = Array.from({ length: Math.max(3, sides) }, (_, i) => {
+    const t = ((i / Math.max(3, sides)) * 360 - 90 + 180 / Math.max(3, sides)) * (Math.PI / 180)
+    return `${20 + 15 * Math.cos(t)},${15 + 11 * Math.sin(t)}`
+  }).join(' ')
+  return (
+    <div className="poly-adder">
+      <button
+        className="object-btn"
+        onClick={() => addCustom({ kind: 'poly', w: 36, d: 36, sides })}
+        title="Add a regular polygon (4 sides = rectangle); resize by dragging its corner anchor"
+      >
+        <svg width={40} height={30}>
+          <polygon points={pts} fill="#dfe9ef" stroke="#4a3f35" />
+        </svg>
+        <small>Polygon</small>
+      </button>
+      <label className="sides-label">
+        sides
+        <input
+          type="number"
+          min={3}
+          max={24}
+          value={sides}
+          onChange={(e) => setSides(Math.min(24, Math.max(3, Number(e.target.value) || 4)))}
+        />
+      </label>
+    </div>
+  )
+}
 
 const SECTIONS: { key: 'SOFAS' | 'SECTIONALS' | 'OTTOS'; label: string }[] = [
   { key: 'SOFAS', label: 'Sofas' },
@@ -9,9 +43,7 @@ const SECTIONS: { key: 'SOFAS' | 'SECTIONALS' | 'OTTOS'; label: string }[] = [
   { key: 'OTTOS', label: 'Ottos' },
 ]
 
-const OBJECTS: { label: string; c: { kind: 'rect' | 'ellipse' | 'door'; w: number; d: number } }[] = [
-  { label: 'Square', c: { kind: 'rect', w: 36, d: 36 } },
-  { label: 'Rectangle', c: { kind: 'rect', w: 48, d: 24 } },
+const OBJECTS: { label: string; c: { kind: 'ellipse' | 'door'; w: number; d: number } }[] = [
   { label: 'Circle', c: { kind: 'ellipse', w: 36, d: 36 } },
   { label: 'Oval', c: { kind: 'ellipse', w: 48, d: 30 } },
   { label: 'Door', c: { kind: 'door', w: 32, d: 5 } },
@@ -46,6 +78,7 @@ export default function Palette() {
       <div>
         <div className="palette-head">Objects</div>
         <div className="objects-row">
+          <PolygonAdder />
           {OBJECTS.map((o) => (
             <button key={o.label} className="object-btn" onClick={() => addCustom(o.c, o.label)}>
               {o.c.kind === 'door' ? (
