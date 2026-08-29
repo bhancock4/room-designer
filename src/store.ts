@@ -63,6 +63,9 @@ interface AppState extends Snapshot {
   editRoom: boolean
   units: UnitMode
   toggleUnits(): void
+  showClearance: boolean
+  toggleClearance(): void
+  setLayout(pieces: Placed[], connections: Conn[]): void
   past: Snapshot[]
   future: Snapshot[]
 
@@ -111,6 +114,26 @@ export const useStore = create<AppState>((set, get) => ({
       /* ignore */
     }
     set({ units: next })
+  },
+  showClearance: (() => {
+    try {
+      return localStorage.getItem('couch-planner:v1:clearance') !== 'off'
+    } catch {
+      return true
+    }
+  })(),
+  toggleClearance() {
+    const next = !get().showClearance
+    try {
+      localStorage.setItem('couch-planner:v1:clearance', next ? 'on' : 'off')
+    } catch {
+      /* ignore */
+    }
+    set({ showClearance: next })
+  },
+  setLayout(pieces, connections) {
+    get().push()
+    set({ pieces, connections, selectedId: null, solo: false })
   },
   past: [],
   future: [],

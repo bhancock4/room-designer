@@ -90,12 +90,12 @@ export const CATALOG: PieceDef[] = [
   def('95', '95L', 'Tux Loveseat', 'SECTIONALS', 80, BODY_D, true, rect(80, BODY_D, 'arm', 'open')),
   def('12', '12L', '1 Arm Loveseat', 'SECTIONALS', 65, BODY_D, true, rect(65, BODY_D, 'arm', 'open')),
   def('31', '31', 'Armless Loveseat', 'SECTIONALS', 55, BODY_D, false, rect(55, BODY_D, 'open', 'open')),
-  def('17', '17', 'Corner Chair', 'SECTIONALS', 43, 43, false, rect(43, 43, 'back', 'open', 'back'), {
+  def('17', '17', 'Corner Chair', 'SECTIONALS', 43, 43, false, corner(43), {
     note: 'Backs on two sides; connects on the other two',
   }),
   def('24', '24L', '1 Arm Chair', 'SECTIONALS', 38, BODY_D, true, rect(38, BODY_D, 'arm', 'open')),
   def('18', '18', 'Armless Chair', 'SECTIONALS', 28, BODY_D, false, rect(28, BODY_D, 'open', 'open')),
-  def('41', '41', 'Corner Wedge', 'SECTIONALS', 54, 54, false, rect(54, 54, 'back', 'open', 'back'), {
+  def('41', '41', 'Corner Wedge', 'SECTIONALS', 54, 54, false, corner(54), {
     note: 'Angled seat; turns a run 90°',
   }),
   def('21', '21R', '1 Arm Chaise', 'SECTIONALS', 43, CHAISE_D, true, rect(43, CHAISE_D, 'open', 'arm')),
@@ -114,6 +114,22 @@ function allOpen(w: number, d: number): Shape {
   s.kinds = s.kinds.map(() => 'open')
   return s
 }
+
+/** Corner piece: backs on top+left, connectable on right+front. */
+function corner(size: number): Shape {
+  const s = rect(size, size, 'back', 'open', 'back')
+  s.kinds[2] = 'open' // front face also connects — corners join two runs
+  return s
+}
+
+/** Approximate adult seating capacity per piece (from seat widths; chaise/cuddler = seats). */
+const SEATS: Record<string, number> = {
+  '01': 3, '02': 2, '44': 2, '81': 3, '33': 3, '97': 3,
+  '10': 3, '11': 3, '32': 3, '45': 3, '50': 3, '95': 2,
+  '12': 2, '31': 2, '17': 1, '24': 1, '18': 1, '41': 1,
+  '21': 1, '75': 2,
+}
+for (const d of CATALOG) d.seats = SEATS[d.id] ?? 0
 
 export const catalogById = new Map(CATALOG.map((d) => [d.id, d]))
 
@@ -157,6 +173,11 @@ export function displayCode(p: Placed): string {
 
 export function defFor(p: Placed): PieceDef | undefined {
   return p.defId ? catalogById.get(p.defId) : undefined
+}
+
+/** Total approximate seats across a set of placed pieces. */
+export function unitSeats(pieces: Placed[]): number {
+  return pieces.reduce((n, p) => n + (defFor(p)?.seats ?? 0), 0)
 }
 
 export function isReversible(p: Placed): boolean {

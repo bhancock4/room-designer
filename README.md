@@ -29,6 +29,12 @@ and L/R reversibility.
   and prints to PDF.
 - **Persistence** — autosaves to localStorage; named saves; JSON export/import;
   undo/redo.
+- **Sheet presets** — all six configurations pre-drawn on the spec sheet load with
+  one click, each verified by test to reproduce its printed overall dimensions.
+- **Seat counts** — every unit and the whole config show approximate seating
+  capacity (chaise/cuddler counted).
+- **Clearance checker** — walkway gaps between units and walls are measured live:
+  red under 24″, amber under 36″, green at 36″+. Toggle with 🚶.
 
 ## Hotkeys
 

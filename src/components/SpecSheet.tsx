@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { CATALOG, catalogById, displayCode, shapeFor } from '../catalog'
+import { CATALOG, catalogById, displayCode, shapeFor, unitSeats } from '../catalog'
 import { bboxOf, fmtLen, mirrorShape } from '../geometry'
 import { pieceBBox, unitBBox, useStore } from '../store'
 import { components } from '../connect'
@@ -119,6 +119,7 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
           <span>CONFIGURATIONS</span>
           <span className="spec-band-right">
             Room: {F(roomBB.w)} × {F(roomBB.h)} ({(roomBB.w / 12).toFixed(1)} × {(roomBB.h / 12).toFixed(1)} ft)
+            &ensp;·&ensp;Total seats ≈ {unitSeats(pieces)}
           </span>
         </div>
 
@@ -179,7 +180,8 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
               const bb = unitBBox(u)
               return (
                 <div key={i}>
-                  <b>Unit {i + 1}:</b> {u.map((p) => displayCode(p)).join(' + ')} — overall {F(bb.w)} × {F(bb.h)}
+                  <b>Unit {i + 1}:</b> {u.map((p) => displayCode(p)).join(' + ')} — overall {F(bb.w)} × {F(bb.h)} ·
+                  ≈{unitSeats(u)} seats
                 </div>
               )
             })}

@@ -1,4 +1,4 @@
-import { defFor, displayCode, isReversible } from '../catalog'
+import { defFor, displayCode, isReversible, unitSeats } from '../catalog'
 import { fmtLen, bboxOf } from '../geometry'
 import { pieceBBox, unitBBox, useStore } from '../store'
 
@@ -51,11 +51,12 @@ export default function Inspector() {
           {!sel.custom && <div className="hint">{defFor(sel)?.name}{defFor(sel)?.note ? ` — ${defFor(sel)?.note}` : ''}</div>}
           <div className="hint">
             Piece: {F(pieceBBox(sel).w)} × {F(pieceBBox(sel).h)}
+            {(defFor(sel)?.seats ?? 0) > 0 && <> · seats {defFor(sel)!.seats}</>}
             {scope.length > 1 && (
               <>
                 <br />
                 <b>
-                  Unit total: {F(unitBBox(scope).w)} × {F(unitBBox(scope).h)}
+                  Unit total: {F(unitBBox(scope).w)} × {F(unitBBox(scope).h)} · ≈{unitSeats(scope)} seats
                 </b>
               </>
             )}

@@ -3,7 +3,8 @@ import Canvas from './components/Canvas'
 import Palette from './components/Palette'
 import Inspector from './components/Inspector'
 import SpecSheet from './components/SpecSheet'
-import { asShownConfig, useStore } from './store'
+import { useStore } from './store'
+import { PRESETS } from './presets'
 import { deleteNamed, exportJSON, importJSON, listSaves, loadAuto, loadNamed, saveAuto, saveNamed } from './storage'
 import './App.css'
 
@@ -131,9 +132,25 @@ export default function App() {
           ↪︎
         </button>
         <span className="spacer" />
-        <button onClick={() => store.loadSnapshot(asShownConfig())} title="The config hand-marked on your sheet">
-          ★ As-Shown 168″×107″
-        </button>
+        <select
+          value=""
+          title="The six configurations pre-drawn on the spec sheet (replaces current pieces, keeps your room)"
+          onChange={(e) => {
+            const p = PRESETS[Number(e.target.value)]
+            if (p) {
+              const { pieces, connections } = p.build()
+              store.setLayout(pieces, connections)
+            }
+            e.target.value = ''
+          }}
+        >
+          <option value="">★ Sheet configs…</option>
+          {PRESETS.map((p, i) => (
+            <option key={p.name} value={i}>
+              {p.name} — {p.dims}
+            </option>
+          ))}
+        </select>
         <button onClick={doSaveAs}>💾 Save</button>
         <select
           value=""
@@ -180,6 +197,13 @@ export default function App() {
         <span className="spacer" />
         <button onClick={() => store.toggleUnits()} title="Toggle dimension display: inches vs feet + inches">
           📏 {store.units === 'in' ? 'inches' : 'ft + in'}
+        </button>
+        <button
+          className={store.showClearance ? 'primary' : ''}
+          onClick={() => store.toggleClearance()}
+          title="Show walkway clearances: red < 24″, amber < 36″, green ≥ 36″"
+        >
+          🚶 Clearance
         </button>
         <button className="primary" onClick={() => setShowSpec(true)}>
           📄 Spec Sheet / PDF

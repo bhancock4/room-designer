@@ -25,6 +25,8 @@ export interface PieceDef {
   hand?: 'L' | 'R' // handedness as printed
   shape: Shape
   note?: string
+  /** approximate adult seating capacity (chaise/cuddler count as seats) */
+  seats?: number
 }
 
 export interface CustomSpec {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Placed, Pt, WorldEdge } from '../types'
 import { bboxOf, fmtLen, polysOverlap, worldEdges, worldShape, centroid } from '../geometry'
 import { findSnap, findWallSnap, unitOf, components } from '../connect'
+import { clearanceGaps, gapColor } from '../clearance'
 import { defFor, displayCode, isReversible, shapeFor } from '../catalog'
 import { pieceBBox, unitBBox, useStore } from '../store'
 
@@ -93,6 +94,12 @@ export default function Canvas() {
     [pieces, connections],
   )
   const selectedUnit = selectedId ? units.find((u) => u.includes(selectedId)) : undefined
+
+  const gaps = useMemo(() => {
+    if (!store.showClearance) return []
+    const boxes = units.map((u) => unitBBox(pieces.filter((p) => u.includes(p.id))))
+    return clearanceGaps(boxes, room)
+  }, [units, pieces, room, store.showClearance])
 
   // ---------- interaction ----------
   function onPiecePointerDown(e: React.PointerEvent, p: Placed) {
@@ -426,6 +433,33 @@ export default function Canvas() {
           {units
             .filter((u) => u.length > 1 || (selectedUnit && u[0] === selectedUnit[0]))
             .map((u) => dimLines(u, u === selectedUnit ? '#2b7de9' : '#8a7f6f', 8))}
+          {/* clearance gaps */}
+          {gaps.map((g, i) => {
+            const c = gapColor(g.dist)
+            const vertical = Math.abs(g.a.x - g.b.x) < 0.01
+            return (
+              <g key={`gap${i}`} stroke={c} fill={c}>
+                <line
+                  x1={g.a.x}
+                  y1={g.a.y}
+                  x2={g.b.x}
+                  y2={g.b.y}
+                  strokeWidth={1.5 / s}
+                  strokeDasharray={`${5 / s} ${3 / s}`}
+                />
+                <text
+                  x={(g.a.x + g.b.x) / 2 + (vertical ? 3 / s : 0)}
+                  y={(g.a.y + g.b.y) / 2 - (vertical ? 0 : 3 / s)}
+                  textAnchor={vertical ? 'start' : 'middle'}
+                  fontSize={11 / s}
+                  stroke="none"
+                  fontWeight={600}
+                >
+                  {F(g.dist)}
+                </text>
+              </g>
+            )
+          })}
           {/* snap hint */}
           {snapHint && (
             <g stroke="#2fa864" strokeWidth={4 / s} strokeLinecap="round">
