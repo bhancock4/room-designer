@@ -73,20 +73,35 @@ export default function Canvas() {
 
   const roomBB = useMemo(() => bboxOf(room), [room])
   const F = (v: number) => fmtLen(v, store.units)
+  const defaultScale = useRef(1)
 
-  // fit view to room
-  useEffect(() => {
-    if (userZoomed.current) return
-    // fill the viewport — just enough padding for the outer dimension labels
+  // default view: room fitted then pulled back 25% inside the endless grid
+  const fitView = (): View => {
     const pad = 52
-    const scale = Math.min((size.w - pad * 2) / roomBB.w, (size.h - pad * 2) / roomBB.h)
-    if (!isFinite(scale) || scale <= 0) return
-    setView({
+    const scale = Math.min((size.w - pad * 2) / roomBB.w, (size.h - pad * 2) / roomBB.h) * 0.75
+    return {
       scale,
       tx: (size.w - roomBB.w * scale) / 2 - roomBB.x * scale,
       ty: (size.h - roomBB.h * scale) / 2 - roomBB.y * scale,
-    })
+    }
+  }
+
+  useEffect(() => {
+    const v = fitView()
+    if (!isFinite(v.scale) || v.scale <= 0) return
+    defaultScale.current = v.scale
+    if (!userZoomed.current) setView(v)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomBB, size])
+
+  const zoomAt = (mx: number, my: number, factor: number) => {
+    userZoomed.current = true
+    setView((v) => {
+      const scale = Math.min(20, Math.max(0.3, v.scale * factor))
+      const k = scale / v.scale
+      return { scale, tx: mx - (mx - v.tx) * k, ty: my - (my - v.ty) * k }
+    })
+  }
 
   useEffect(() => {
     const el = wrapRef.current
@@ -288,16 +303,8 @@ export default function Canvas() {
   }
 
   function onWheel(e: React.WheelEvent) {
-    userZoomed.current = true
     const r = svgRef.current!.getBoundingClientRect()
-    const mx = e.clientX - r.left
-    const my = e.clientY - r.top
-    const factor = Math.exp(-e.deltaY * 0.0015)
-    setView((v) => {
-      const scale = Math.min(20, Math.max(0.5, v.scale * factor))
-      const k = scale / v.scale
-      return { scale, tx: mx - (mx - v.tx) * k, ty: my - (my - v.ty) * k }
-    })
+    zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015))
   }
 
   function onRoomEdgeDoubleClick(e: React.MouseEvent, index: number) {
@@ -484,11 +491,12 @@ export default function Canvas() {
             <path d={pathOf(room.map((p) => ({ x: p.x * s + view.tx, y: p.y * s + view.ty })))} />
           </clipPath>
         </defs>
-        <rect width={size.w} height={size.h} fill="#efeae0" />
+        {/* endless workspace: grid everywhere, room interior lifted */}
+        <rect width={size.w} height={size.h} fill="#f1ecdf" />
         <g clipPath="url(#roomclip)">
           <rect width={size.w} height={size.h} fill="#fbf8f1" />
-          <rect width={size.w} height={size.h} fill="url(#grid)" />
         </g>
+        <rect width={size.w} height={size.h} fill="url(#grid)" />
         <g transform={`translate(${view.tx},${view.ty}) scale(${s})`}>
           {/* room outline */}
           <path d={pathOf(room)} fill="none" stroke="#3d342b" strokeWidth={5 / s} vectorEffect="none" />
@@ -640,6 +648,20 @@ export default function Canvas() {
           Room edit: drag walls or corners · double-click a wall to add a corner · ⌥-click a corner to delete it
         </div>
       )}
+      <div className="zoom-ctl" title="Zoom (scroll wheel works anywhere; Space+drag pans)">
+        <button onClick={() => zoomAt(size.w / 2, size.h / 2, 1 / 1.25)}>−</button>
+        <span>{Math.round((view.scale / (defaultScale.current || 1)) * 100)}%</span>
+        <button onClick={() => zoomAt(size.w / 2, size.h / 2, 1.25)}>+</button>
+        <button
+          title="Fit room"
+          onClick={() => {
+            userZoomed.current = false
+            setView(fitView())
+          }}
+        >
+          ⤢
+        </button>
+      </div>
     </div>
   )
 }

@@ -174,6 +174,35 @@ button:disabled {
   user-select: none;
   pointer-events: none;
 }
+.zoom-ctl {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #d8d2c6;
+  border-radius: 8px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: #6b5f52;
+}
+.zoom-ctl button {
+  border: none;
+  background: transparent;
+  padding: 2px 7px;
+  font-size: 13px;
+  line-height: 1;
+}
+.zoom-ctl button:hover {
+  background: #efe8da;
+  border-radius: 5px;
+}
+.zoom-ctl span {
+  min-width: 38px;
+  text-align: center;
+}
 .canvas-note {
   position: absolute;
   bottom: 10px;
