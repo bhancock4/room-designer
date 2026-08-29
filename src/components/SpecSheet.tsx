@@ -104,7 +104,9 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
             <div className="spec-cards">
               {customs.map((p) => (
                 <div className="spec-card" key={p.id}>
-                  <div className="spec-card-title">{p.label || (p.custom!.kind === 'rect' ? 'Box' : 'Oval')}</div>
+                  <div className="spec-card-title">
+                    {p.label || (p.custom!.kind === 'rect' ? 'Box' : p.custom!.kind === 'door' ? 'Door' : 'Oval')}
+                  </div>
                   <div className="spec-card-dims">
                     L: {F(p.custom!.w)} × D: {F(p.custom!.d)}
                   </div>

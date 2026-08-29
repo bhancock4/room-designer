@@ -35,6 +35,11 @@ and L/R reversibility.
   capacity (chaise/cuddler counted).
 - **Clearance checker** — walkway gaps between units and walls are measured live:
   red under 24″, amber under 36″, green at 36″+. Toggle with 🚶.
+- **Doorways** — a Door object (Objects palette) renders a floor-plan swing arc and
+  keeps a 32″ approach zone clear: green when clear, red "needs 32″ clear" when
+  furniture blocks it. `F` flips the hinge side; width is editable.
+- **Angled seats** — the corner wedge and cuddler draw their diagonal seat fronts
+  so orientation reads at a glance.
 
 ## Hotkeys
 

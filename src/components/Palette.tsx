@@ -9,11 +9,12 @@ const SECTIONS: { key: 'SOFAS' | 'SECTIONALS' | 'OTTOS'; label: string }[] = [
   { key: 'OTTOS', label: 'Ottos' },
 ]
 
-const OBJECTS = [
-  { label: 'Square', c: { kind: 'rect' as const, w: 36, d: 36 } },
-  { label: 'Rectangle', c: { kind: 'rect' as const, w: 48, d: 24 } },
-  { label: 'Circle', c: { kind: 'ellipse' as const, w: 36, d: 36 } },
-  { label: 'Oval', c: { kind: 'ellipse' as const, w: 48, d: 30 } },
+const OBJECTS: { label: string; c: { kind: 'rect' | 'ellipse' | 'door'; w: number; d: number } }[] = [
+  { label: 'Square', c: { kind: 'rect', w: 36, d: 36 } },
+  { label: 'Rectangle', c: { kind: 'rect', w: 48, d: 24 } },
+  { label: 'Circle', c: { kind: 'ellipse', w: 36, d: 36 } },
+  { label: 'Oval', c: { kind: 'ellipse', w: 48, d: 30 } },
+  { label: 'Door', c: { kind: 'door', w: 32, d: 5 } },
 ]
 
 export default function Palette() {
@@ -47,7 +48,13 @@ export default function Palette() {
         <div className="objects-row">
           {OBJECTS.map((o) => (
             <button key={o.label} className="object-btn" onClick={() => addCustom(o.c, o.label)}>
-              {o.c.kind === 'ellipse' ? (
+              {o.c.kind === 'door' ? (
+                <svg width={40} height={30}>
+                  <rect x={7} y={3} width={20} height={4} fill="#fff" stroke="#4a3f35" />
+                  <path d="M27 8 A 20 20 0 0 1 7 28" fill="none" stroke="#6b5f52" strokeDasharray="3 2" />
+                  <line x1={7} y1={8} x2={7} y2={28} stroke="#4a3f35" />
+                </svg>
+              ) : o.c.kind === 'ellipse' ? (
                 <svg width={40} height={30}>
                   <ellipse cx={20} cy={15} rx={17} ry={o.c.w === o.c.d ? 12 : 10} fill="#dfe9ef" stroke="#4a3f35" />
                 </svg>
@@ -67,7 +74,10 @@ export default function Palette() {
             </button>
           ))}
         </div>
-        <div className="palette-note">Objects are placeholders for tables, rugs, doors… label & resize them in the side panel.</div>
+        <div className="palette-note">
+          Objects stand in for tables, rugs, etc. — label &amp; resize them in the side panel. Doors keep a 32″ swing
+          zone clear (turns red when blocked); reverse (F) flips the hinge.
+        </div>
       </div>
     </div>
   )

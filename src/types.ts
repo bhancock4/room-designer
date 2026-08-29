@@ -12,6 +12,8 @@ export type Category = 'SOFAS' | 'SECTIONALS' | 'OTTOS' | 'OBJECTS'
 export interface Shape {
   pts: Pt[]
   kinds: EdgeKind[]
+  /** decorative polylines (seat fronts, door swing arcs) that transform with the piece */
+  decor?: Pt[][]
 }
 
 export interface PieceDef {
@@ -30,7 +32,7 @@ export interface PieceDef {
 }
 
 export interface CustomSpec {
-  kind: 'rect' | 'ellipse'
+  kind: 'rect' | 'ellipse' | 'door'
   w: number
   d: number
 }

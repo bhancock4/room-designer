@@ -12,6 +12,15 @@ export default function PieceGlyph({ shape, w = 74, h = 50 }: { shape: Shape; w?
   return (
     <svg width={w} height={h} className="glyph">
       <path d={d} fill="#fbf8f1" stroke="#4a3f35" strokeWidth={1.2} strokeLinejoin="round" />
+      {shape.decor?.map((line, i) => (
+        <polyline
+          key={`dec${i}`}
+          points={line.map((p) => `${(p.x * scale + ox).toFixed(1)},${(p.y * scale + oy).toFixed(1)}`).join(' ')}
+          fill="none"
+          stroke="#6b5f52"
+          strokeWidth={1}
+        />
+      ))}
       {shape.pts.map((p, i) => {
         const q = shape.pts[(i + 1) % shape.pts.length]
         const kind = shape.kinds[i]

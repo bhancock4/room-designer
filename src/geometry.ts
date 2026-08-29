@@ -23,17 +23,23 @@ export function mirrorShape(s: Shape): Shape {
   const pts = [...mirrored].reverse()
   const kinds: EdgeKind[] = []
   for (let j = 0; j < n; j++) kinds.push(s.kinds[(2 * n - 2 - j) % n])
-  return { pts, kinds }
+  const decor = s.decor?.map((line) => line.map((p) => ({ x: axis - p.x, y: p.y })))
+  return { pts, kinds, decor }
 }
 
 /** Rotate clockwise by rot (multiple of 90), then normalize so bbox min corner is (0,0). */
 export function rotateShape(s: Shape, rot: number): Shape {
   const steps = ((rot % 360) + 360) / 90 % 4
+  const r90 = (p: Pt): Pt => ({ x: -p.y, y: p.x })
   let pts = s.pts
-  for (let i = 0; i < steps; i++) pts = pts.map((p) => ({ x: -p.y, y: p.x }))
+  let decor = s.decor
+  for (let i = 0; i < steps; i++) {
+    pts = pts.map(r90)
+    decor = decor?.map((line) => line.map(r90))
+  }
   const bb = bboxOf(pts)
-  pts = pts.map((p) => ({ x: p.x - bb.x, y: p.y - bb.y }))
-  return { pts, kinds: s.kinds }
+  const shift = (p: Pt): Pt => ({ x: p.x - bb.x, y: p.y - bb.y })
+  return { pts: pts.map(shift), kinds: s.kinds, decor: decor?.map((line) => line.map(shift)) }
 }
 
 /** Shape transformed by a piece's reversed/rot, normalized to (0,0), then translated to (x, y). */
@@ -41,7 +47,19 @@ export function worldShape(p: Placed, base: Shape): Shape {
   let s = base
   if (p.reversed) s = mirrorShape(s)
   s = rotateShape(s, p.rot)
-  return { pts: s.pts.map((q) => ({ x: q.x + p.x, y: q.y + p.y })), kinds: s.kinds }
+  const move = (q: Pt): Pt => ({ x: q.x + p.x, y: q.y + p.y })
+  return { pts: s.pts.map(move), kinds: s.kinds, decor: s.decor?.map((line) => line.map(move)) }
+}
+
+/** Transform auxiliary points (e.g. a door's keep-clear zone) with a piece's full transform. */
+export function worldAux(p: Placed, base: Shape, aux: Pt[]): Pt[] {
+  const carrier: Shape = { pts: base.pts, kinds: base.kinds, decor: [aux] }
+  return worldShape(p, carrier).decor![0]
+}
+
+/** True when two axis-aligned boxes overlap by more than eps. */
+export function rectsIntersect(a: BBox, b: BBox, eps = 0.5): boolean {
+  return a.x + a.w > b.x + eps && b.x + b.w > a.x + eps && a.y + a.h > b.y + eps && b.y + b.h > a.y + eps
 }
 
 export function worldEdges(pieceId: string, s: Shape): WorldEdge[] {

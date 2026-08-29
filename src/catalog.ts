@@ -48,6 +48,13 @@ function cuddlerRight(): Shape {
       { x: 0, y: 74 },
     ],
     kinds: ['back', 'arm', 'front', 'front', 'open'],
+    // seat-front line paralleling the angled face so the 45° seat reads at a glance
+    decor: [
+      [
+        { x: 61, y: 29 },
+        { x: 24, y: 65 },
+      ],
+    ],
   }
 }
 
@@ -95,7 +102,7 @@ export const CATALOG: PieceDef[] = [
   }),
   def('24', '24L', '1 Arm Chair', 'SECTIONALS', 38, BODY_D, true, rect(38, BODY_D, 'arm', 'open')),
   def('18', '18', 'Armless Chair', 'SECTIONALS', 28, BODY_D, false, rect(28, BODY_D, 'open', 'open')),
-  def('41', '41', 'Corner Wedge', 'SECTIONALS', 54, 54, false, corner(54), {
+  def('41', '41', 'Corner Wedge', 'SECTIONALS', 54, 54, false, corner(54, true), {
     note: 'Angled seat; turns a run 90°',
   }),
   def('21', '21R', '1 Arm Chaise', 'SECTIONALS', 43, CHAISE_D, true, rect(43, CHAISE_D, 'open', 'arm')),
@@ -116,9 +123,24 @@ function allOpen(w: number, d: number): Shape {
 }
 
 /** Corner piece: backs on top+left, connectable on right+front. */
-function corner(size: number): Shape {
+function corner(size: number, angled = false): Shape {
   const s = rect(size, size, 'back', 'open', 'back')
   s.kinds[2] = 'open' // front face also connects — corners join two runs
+  if (angled) {
+    // diagonal back-cushion and seat-front lines: the wedge's angled seat
+    const a = size * 0.26
+    const b = size * 0.93
+    s.decor = [
+      [
+        { x: b, y: a },
+        { x: a, y: b },
+      ],
+      [
+        { x: size * 0.98, y: size * 0.55 },
+        { x: size * 0.55, y: size * 0.98 },
+      ],
+    ]
+  }
   return s
 }
 
@@ -133,7 +155,46 @@ for (const d of CATALOG) d.seats = SEATS[d.id] ?? 0
 
 export const catalogById = new Map(CATALOG.map((d) => [d.id, d]))
 
+/** Minimum clear approach depth in front of a doorway, inches. */
+export const DOOR_CLEARANCE = 32
+
+/** Canonical keep-clear zone in front of a door opening (swing side). */
+export function doorZonePts(c: CustomSpec): { x: number; y: number }[] {
+  const depth = Math.max(DOOR_CLEARANCE, c.w)
+  return [
+    { x: 0, y: c.d },
+    { x: c.w, y: c.d },
+    { x: c.w, y: c.d + depth },
+    { x: 0, y: c.d + depth },
+  ]
+}
+
 export function customShape(c: CustomSpec): Shape {
+  if (c.kind === 'door') {
+    // opening in the wall (jamb rect) + swing arc and door leaf as decor.
+    // hinge at bottom-left of the jamb; F (reverse) flips the hinge side.
+    const arc: { x: number; y: number }[] = []
+    for (let i = 0; i <= 12; i++) {
+      const t = (i / 12) * (Math.PI / 2)
+      arc.push({ x: Math.cos(t) * c.w, y: c.d + Math.sin(t) * c.w })
+    }
+    return {
+      pts: [
+        { x: 0, y: 0 },
+        { x: c.w, y: 0 },
+        { x: c.w, y: c.d },
+        { x: 0, y: c.d },
+      ],
+      kinds: ['front', 'front', 'front', 'front'], // doors don't snap-connect to couches
+      decor: [
+        arc,
+        [
+          { x: 0, y: c.d },
+          { x: 0, y: c.d + c.w },
+        ],
+      ],
+    }
+  }
   if (c.kind === 'rect') {
     return {
       pts: [
@@ -164,7 +225,7 @@ export function shapeFor(p: Placed): Shape {
 
 /** Display code with handedness reflecting the reversed flag (11L reversed -> 11R). */
 export function displayCode(p: Placed): string {
-  if (p.custom) return p.label || (p.custom.kind === 'rect' ? 'Box' : 'Oval')
+  if (p.custom) return p.label || (p.custom.kind === 'rect' ? 'Box' : p.custom.kind === 'door' ? 'Door' : 'Oval')
   const d = catalogById.get(p.defId!)!
   if (!d.hand) return d.code
   const hand = p.reversed ? (d.hand === 'L' ? 'R' : 'L') : d.hand
@@ -181,6 +242,6 @@ export function unitSeats(pieces: Placed[]): number {
 }
 
 export function isReversible(p: Placed): boolean {
-  if (p.custom) return p.custom.kind === 'rect'
+  if (p.custom) return p.custom.kind !== 'ellipse' // doors flip their hinge side
   return defFor(p)?.reversible ?? false
 }

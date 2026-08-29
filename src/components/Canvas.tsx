@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Placed, Pt, WorldEdge } from '../types'
-import { bboxOf, fmtLen, polysOverlap, worldEdges, worldShape, centroid } from '../geometry'
+import { bboxOf, fmtLen, polysOverlap, rectsIntersect, worldAux, worldEdges, worldShape, centroid } from '../geometry'
 import { findSnap, findWallSnap, unitOf, components } from '../connect'
 import { clearanceGaps, gapColor } from '../clearance'
-import { defFor, displayCode, isReversible, shapeFor } from '../catalog'
+import { defFor, displayCode, doorZonePts, isReversible, shapeFor, DOOR_CLEARANCE } from '../catalog'
 import { pieceBBox, unitBBox, useStore } from '../store'
 
 interface View {
@@ -97,9 +97,25 @@ export default function Canvas() {
 
   const gaps = useMemo(() => {
     if (!store.showClearance) return []
-    const boxes = units.map((u) => unitBBox(pieces.filter((p) => u.includes(p.id))))
+    const doorIds = new Set(pieces.filter((p) => p.custom?.kind === 'door').map((p) => p.id))
+    const boxes = units
+      .filter((u) => !u.some((id) => doorIds.has(id))) // doors get their own 32" rule
+      .map((u) => unitBBox(pieces.filter((p) => u.includes(p.id))))
     return clearanceGaps(boxes, room)
   }, [units, pieces, room, store.showClearance])
+
+  const doorZones = useMemo(() => {
+    return pieces
+      .filter((p) => p.custom?.kind === 'door')
+      .map((door) => {
+        const zone = worldAux(door, shapeFor(door), doorZonePts(door.custom!))
+        const zbb = bboxOf(zone)
+        const blocked = pieces.some(
+          (q) => q.id !== door.id && q.custom?.kind !== 'door' && rectsIntersect(pieceBBox(q), zbb, 1),
+        )
+        return { id: door.id, zone, blocked }
+      })
+  }, [pieces])
 
   // ---------- interaction ----------
   function onPiecePointerDown(e: React.PointerEvent, p: Placed) {
@@ -259,7 +275,11 @@ export default function Canvas() {
     const isSel = selectedUnit?.includes(p.id)
     const isSolo = solo && selectedId === p.id
     const def = defFor(p)
-    const fill = p.custom ? CAT_FILL.OBJECTS : CAT_FILL[def?.category ?? 'SOFAS']
+    const fill = p.custom
+      ? p.custom.kind === 'door'
+        ? '#fbf8f1' // doors read as wall openings, not furniture
+        : CAT_FILL.OBJECTS
+      : CAT_FILL[def?.category ?? 'SOFAS']
     const c = centroid(pts)
     const bb = pieceBBox(p)
     const stroke = isSolo ? '#e07b1f' : isSel ? '#2b7de9' : '#4a3f35'
@@ -275,6 +295,10 @@ export default function Canvas() {
         }}
         style={{ cursor: editRoom ? 'default' : 'move' }}
       >
+        {p.custom?.kind === 'door' && (
+          // thin jambs are hard to grab — invisible padded hit area
+          <rect x={bb.x - 6} y={bb.y - 6} width={bb.w + 12} height={bb.h + 12} fill="rgba(0,0,0,0.001)" />
+        )}
         {p.custom?.kind === 'ellipse' ? (
           <ellipse
             cx={bb.x + bb.w / 2}
@@ -340,6 +364,16 @@ export default function Canvas() {
           }
           return null
         })}
+        {g.shape.decor?.map((line, i) => (
+          <polyline
+            key={`d${i}`}
+            points={line.map((q) => `${q.x},${q.y}`).join(' ')}
+            fill="none"
+            stroke="#6b5f52"
+            strokeWidth={1.4 / s}
+            strokeDasharray={p.custom?.kind === 'door' && i === 0 ? `${4 / s} ${3 / s}` : undefined}
+          />
+        ))}
         <text x={c.x} y={c.y - 1} textAnchor="middle" fontSize={fontC} fontWeight={700} fill="#3d342b">
           {displayCode(p)}
           {isReversible(p) ? ' ⇄' : ''}
@@ -364,7 +398,7 @@ export default function Canvas() {
     const fs = 12 / s
     const tick = 4 / s
     return (
-      <g key={ids.join(',')} stroke={color} fill={color} strokeWidth={1 / s}>
+      <g key={ids.join(',')} stroke={color} fill={color} strokeWidth={1 / s} pointerEvents="none">
         <line x1={bb.x} y1={bb.y - o} x2={bb.x + bb.w} y2={bb.y - o} />
         <line x1={bb.x} y1={bb.y - o - tick} x2={bb.x} y2={bb.y - o + tick} />
         <line x1={bb.x + bb.w} y1={bb.y - o - tick} x2={bb.x + bb.w} y2={bb.y - o + tick} />
@@ -433,12 +467,32 @@ export default function Canvas() {
           {units
             .filter((u) => u.length > 1 || (selectedUnit && u[0] === selectedUnit[0]))
             .map((u) => dimLines(u, u === selectedUnit ? '#2b7de9' : '#8a7f6f', 8))}
+          {/* door keep-clear zones */}
+          {doorZones.map((z) => {
+            const zc = centroid(z.zone)
+            return (
+              <g key={`dz${z.id}`} pointerEvents="none">
+                <path
+                  d={pathOf(z.zone)}
+                  fill={z.blocked ? 'rgba(192,57,43,0.15)' : 'rgba(46,139,87,0.06)'}
+                  stroke={z.blocked ? '#c0392b' : '#a5b0a0'}
+                  strokeWidth={1.2 / s}
+                  strokeDasharray={`${4 / s} ${3 / s}`}
+                />
+                {z.blocked && (
+                  <text x={zc.x} y={zc.y} textAnchor="middle" fontSize={11 / s} fontWeight={700} fill="#c0392b">
+                    needs {F(DOOR_CLEARANCE)} clear
+                  </text>
+                )}
+              </g>
+            )
+          })}
           {/* clearance gaps */}
           {gaps.map((g, i) => {
             const c = gapColor(g.dist)
             const vertical = Math.abs(g.a.x - g.b.x) < 0.01
             return (
-              <g key={`gap${i}`} stroke={c} fill={c}>
+              <g key={`gap${i}`} stroke={c} fill={c} pointerEvents="none">
                 <line
                   x1={g.a.x}
                   y1={g.a.y}
@@ -462,7 +516,7 @@ export default function Canvas() {
           })}
           {/* snap hint */}
           {snapHint && (
-            <g stroke="#2fa864" strokeWidth={4 / s} strokeLinecap="round">
+            <g stroke="#2fa864" strokeWidth={4 / s} strokeLinecap="round" pointerEvents="none">
               <line x1={snapHint.a.a.x} y1={snapHint.a.a.y} x2={snapHint.a.b.x} y2={snapHint.a.b.y} />
               <line x1={snapHint.b.a.x} y1={snapHint.b.a.y} x2={snapHint.b.b.x} y2={snapHint.b.b.y} />
             </g>
@@ -530,7 +584,7 @@ function RoomDims({ room, s, units }: { room: Pt[]; s: number; units: 'in' | 'ft
   const o = 26 / s + 8
   const irregular = room.length > 4
   return (
-    <g stroke="#7a7062" fill="#7a7062" strokeWidth={1 / s}>
+    <g stroke="#7a7062" fill="#7a7062" strokeWidth={1 / s} pointerEvents="none">
       <line x1={bb.x} y1={bb.y - o} x2={bb.x + bb.w} y2={bb.y - o} />
       <text x={bb.x + bb.w / 2} y={bb.y - o - 4 / s} textAnchor="middle" fontSize={fs} stroke="none" fontWeight={600}>
         {F(bb.w)} ({(bb.w / 12).toFixed(1)} ft)
