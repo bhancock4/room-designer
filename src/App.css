@@ -278,6 +278,15 @@ input[type='text'] {
   border-radius: 5px;
   width: 100%;
 }
+.ftin-row {
+  align-items: flex-end;
+}
+.ftin-label {
+  font-size: 12px;
+  font-weight: 600;
+  padding-bottom: 6px;
+  min-width: 44px;
+}
 .btn-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -33,7 +33,7 @@ export function effectiveRotStep(p: Placed, s: { rotStepPieces: number; rotStepS
   return p.rotStep ?? (p.custom ? s.rotStepShapes : s.rotStepPieces)
 }
 
-export function defaultRoom(w = 216, h = 150): Pt[] {
+export function defaultRoom(w = 300, h = 300): Pt[] {
   return [
     { x: 0, y: 0 },
     { x: w, y: 0 },

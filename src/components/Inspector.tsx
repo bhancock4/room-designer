@@ -8,6 +8,35 @@ function stepOptionsWith(current: number): number[] {
   return STEP_OPTIONS.includes(current) ? STEP_OPTIONS : [...STEP_OPTIONS, current].sort((a, b) => a - b)
 }
 
+/** Feet + inches input pair for a length stored in inches. */
+function FtInRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const ft = Math.floor(Math.round(value) / 12)
+  const inch = Math.round(value) % 12
+  const set = (f: number, i: number) => {
+    const v = Math.max(24, f * 12 + i)
+    if (v !== Math.round(value)) onChange(v)
+  }
+  return (
+    <div className="row ftin-row">
+      <span className="ftin-label">{label}</span>
+      <label>
+        ft
+        <input type="number" min={2} value={ft} onChange={(e) => set(Math.max(0, Number(e.target.value) || 0), inch)} />
+      </label>
+      <label>
+        in
+        <input
+          type="number"
+          min={-1}
+          max={12}
+          value={inch}
+          onChange={(e) => set(ft, Math.min(11, Math.max(0, Number(e.target.value) || 0)))}
+        />
+      </label>
+    </div>
+  )
+}
+
 export default function Inspector() {
   const store = useStore()
   const { selectedId, room, editRoom } = store
@@ -20,28 +49,10 @@ export default function Inspector() {
     <div className="inspector">
       <div className="panel">
         <div className="panel-head">Room</div>
-        <div className="row">
-          <label>
-            W (in)
-            <input
-              type="number"
-              value={Math.round(roomBB.w)}
-              min={24}
-              onChange={(e) => store.setRoomRect(Number(e.target.value) || roomBB.w, roomBB.h)}
-            />
-          </label>
-          <label>
-            D (in)
-            <input
-              type="number"
-              value={Math.round(roomBB.h)}
-              min={24}
-              onChange={(e) => store.setRoomRect(roomBB.w, Number(e.target.value) || roomBB.h)}
-            />
-          </label>
-        </div>
+        <FtInRow label="Width" value={roomBB.w} onChange={(v) => store.setRoomRect(v, roomBB.h)} />
+        <FtInRow label="Depth" value={roomBB.h} onChange={(v) => store.setRoomRect(roomBB.w, v)} />
         <div className="hint">
-          {(roomBB.w / 12).toFixed(1)} ft × {(roomBB.h / 12).toFixed(1)} ft · {room.length} corners
+          {F(roomBB.w)} × {F(roomBB.h)} · {room.length} corners
         </div>
         <button className={editRoom ? 'primary' : ''} onClick={() => store.setEditRoom(!editRoom)}>
           {editRoom ? '✓ Done editing room' : '✎ Edit room shape'}
