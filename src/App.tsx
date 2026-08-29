@@ -15,7 +15,7 @@ const HOTKEYS: [string, string][] = [
   ['Drag', 'Move — green edges glow when a snap-connect is possible'],
   ['Arrows / Shift+Arrows', 'Nudge 1″ / 12″'],
   ['R / Shift+R', 'Rotate 90° CW / CCW'],
-  ['⌃→ / ⌃← (Ctrl+Arrows)', 'Rotate 90° CW / CCW'],
+  ['⌘→ / ⌘← (Cmd+Arrows)', 'Rotate 90° CW / CCW (Ctrl works too)'],
   ['F or ⌥Arrow (Option+Arrow)', 'Reverse (flip L↔R) — reversible pieces & whole units'],
   ['U', 'Detach selected piece from its unit'],
   ['D', 'Duplicate selection'],
@@ -92,7 +92,7 @@ export default function App() {
         setShowHelp(true)
       } else if (e.key.startsWith('Arrow')) {
         e.preventDefault()
-        if (e.ctrlKey) {
+        if (e.ctrlKey || e.metaKey) {
           s.rotateSelection(e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 1)
         } else if (e.altKey) {
           s.reverseSelection()

@@ -48,7 +48,7 @@ and L/R reversibility.
 | `Tab` / `Shift+Tab` | cycle units |
 | click / double-click | select unit / single piece |
 | arrows / `Shift`+arrows | nudge 1″ / 12″ |
-| `R` / `Shift+R` or `Ctrl+→` / `Ctrl+←` | rotate 90° CW / CCW |
+| `R` / `Shift+R` or `Cmd+→` / `Cmd+←` (Ctrl on PC) | rotate 90° CW / CCW |
 | `F` or `Option+Arrow` | reverse (flip L↔R) |
 | `U` | detach piece from unit |
 | `D` | duplicate |
