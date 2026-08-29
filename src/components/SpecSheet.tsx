@@ -87,7 +87,7 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
                       <div className="spec-card-dims">
                         L: {F(d.w)} × D: {F(d.d)}
                       </div>
-                      <PieceGlyph shape={v.reversedFromSheet ? mirrorForDisplay(d.id) : d.shape} w={92} h={58} />
+                      <PieceGlyph shape={v.reversedFromSheet ? mirrorForDisplay(d.id) : d.shape} w={92} h={58} mono />
                       <div className="spec-qty">Qty: {v.qty}</div>
                       {v.reversedFromSheet && <div className="spec-revnote">reversed from sheet ({d.code} → {v.code})</div>}
                     </div>
@@ -104,9 +104,7 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
             <div className="spec-cards">
               {customs.map((p) => (
                 <div className="spec-card" key={p.id}>
-                  <div className="spec-card-title">
-                    {p.label || (p.custom!.kind === 'rect' ? 'Box' : p.custom!.kind === 'door' ? 'Door' : 'Oval')}
-                  </div>
+                  <div className="spec-card-title">{displayCode(p)}</div>
                   <div className="spec-card-dims">
                     L: {F(p.custom!.w)} × D: {F(p.custom!.d)}
                   </div>
@@ -128,8 +126,8 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
         <svg width={DIAG_W} height={DIAG_H} className="spec-diagram">
           <path
             d={room.map((p, i) => `${i ? 'L' : 'M'}${dx(p.x)},${dy(p.y)}`).join(' ') + ' Z'}
-            fill="#fdfcf8"
-            stroke="#3d342b"
+            fill="#ffffff"
+            stroke="#000000"
             strokeWidth={2.5}
           />
           {pieces.map((p) => {
@@ -139,8 +137,8 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
               <g key={p.id}>
                 <path
                   d={pts.map((q, i) => `${i ? 'L' : 'M'}${dx(q.x)},${dy(q.y)}`).join(' ') + ' Z'}
-                  fill={p.custom ? '#e8eff3' : '#f3ecdc'}
-                  stroke="#4a3f35"
+                  fill={p.custom ? '#f0f0f0' : '#ffffff'}
+                  stroke="#000000"
                   strokeWidth={1.2}
                 />
                 <text x={dx(bb.x + bb.w / 2)} y={dy(bb.y + bb.h / 2)} textAnchor="middle" fontSize={11} fontWeight={700}>
@@ -154,7 +152,7 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
             .map((u, i) => {
               const bb = unitBBox(u)
               return (
-                <g key={i} stroke="#6b6156" fill="#6b6156" strokeWidth={1}>
+                <g key={i} stroke="#333333" fill="#333333" strokeWidth={1}>
                   <line x1={dx(bb.x)} y1={dy(bb.y) - 10} x2={dx(bb.x + bb.w)} y2={dy(bb.y) - 10} />
                   <text x={dx(bb.x + bb.w / 2)} y={dy(bb.y) - 14} textAnchor="middle" fontSize={11} stroke="none">
                     {F(bb.w)}

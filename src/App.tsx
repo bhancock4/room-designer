@@ -175,9 +175,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="toolbar">
-        <span className="brand">
-          🛋 Sectional Planner <small>Cascade modular</small>
-        </span>
+        <span className="brand">🛋 Sectional Planner</span>
         <button onClick={() => store.undo()} disabled={store.past.length === 0} title="Undo (⌘Z)">
           ↩︎
         </button>

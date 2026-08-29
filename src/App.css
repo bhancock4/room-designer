@@ -35,7 +35,7 @@ body,
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 8px 24px 8px 12px;
   background: var(--toolbar-bg);
   color: #f2ede2;
   flex-wrap: wrap;
@@ -58,9 +58,9 @@ body,
   text-align: center;
 }
 .toolbar button.gear {
-  font-size: 19px;
+  font-size: 26px;
   line-height: 1;
-  padding: 2px 10px 4px;
+  padding: 1px 10px 4px;
 }
 .help-details {
   margin: 10px 0 14px;
@@ -435,6 +435,7 @@ kbd {
 }
 .spec-sheet {
   background: #fff;
+  color: #111;
   width: 816px;
   margin: 0 auto;
   padding: 36px 44px;
@@ -464,8 +465,8 @@ kbd {
   color: #555;
 }
 .spec-band {
-  background: #b6afa2;
-  color: #fff;
+  background: #d2d2d2;
+  color: #1a1a1a;
   font-weight: 700;
   letter-spacing: 1px;
   padding: 4px 10px;
@@ -485,8 +486,8 @@ kbd {
 .spec-rail {
   writing-mode: vertical-lr;
   transform: rotate(180deg);
-  background: #d5cfc2;
-  color: #4c443a;
+  background: #e2e2e2;
+  color: #333;
   font-size: 10px;
   font-weight: 700;
   padding: 8px 2px;
@@ -501,7 +502,7 @@ kbd {
   padding: 4px 0;
 }
 .spec-card {
-  border: 1px solid #ddd6c8;
+  border: 1px solid #bbb;
   border-radius: 4px;
   padding: 6px 10px;
   text-align: center;
@@ -519,7 +520,8 @@ kbd {
   font-size: 13px;
 }
 .spec-revnote {
-  color: #1d7a46;
+  color: #333;
+  font-style: italic;
   font-size: 10px;
 }
 .spec-note {
@@ -559,6 +561,7 @@ kbd {
     visibility: visible;
   }
   .spec-sheet {
+    filter: grayscale(1);
     box-shadow: none;
     width: auto;
     margin: 0;
