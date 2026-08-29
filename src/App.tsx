@@ -29,7 +29,7 @@ const HOTKEYS: [string, string][] = [
   ['Arrows / Shift+Arrows', 'Nudge 1″ / 12″'],
   ['R / Shift+R', 'Rotate 90° CW / CCW'],
   ['⌘→ / ⌘← (Cmd+Arrows)', 'Rotate CW / CCW by the piece’s step (couch 90°, shapes 22.5° by default)'],
-  ['Space+drag / middle-drag', 'Pan the view (plain background drag no longer pans)'],
+  ['Drag empty canvas', 'Pan the view (click without moving deselects)'],
   ['F or ⌥Arrow (Option+Arrow)', 'Reverse (flip L↔R) — reversible pieces & whole units'],
   ['U', 'Detach selected piece from its unit'],
   ['D', 'Duplicate selection'],
@@ -167,78 +167,78 @@ export default function App() {
             e.target.value = ''
           }}
         >
-          <option value="">★ Sheet configs…</option>
+          <option value="">★ Example configs…</option>
           {PRESETS.map((p, i) => (
             <option key={p.name} value={i}>
               {p.name} — {p.dims}
             </option>
           ))}
         </select>
-        <button onClick={doSaveAs}>💾 Save</button>
         <select
           value=""
-          onChange={(e) => {
-            if (e.target.value.startsWith('load:')) doLoad(e.target.value.slice(5))
-            else if (e.target.value.startsWith('del:')) {
-              deleteNamed(e.target.value.slice(4))
-              setSaves(listSaves())
-            }
-          }}
-        >
-          <option value="">📂 Load…</option>
-          {saves.map((n) => (
-            <option key={n} value={`load:${n}`}>
-              {n}
-            </option>
-          ))}
-          {saves.map((n) => (
-            <option key={`d${n}`} value={`del:${n}`}>
-              🗑 delete “{n}”
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => {
-            const { room, pieces, connections } = useStore.getState()
-            exportJSON({ room, pieces, connections })
-          }}
-        >
-          ⇩ Export
-        </button>
-        <button onClick={() => fileRef.current?.click()}>⇧ Import</button>
-        <select
-          value=""
-          title="Room templates: save your room shape + fixed objects (doors, tables) and reuse it across couch configs"
+          title="Save/load configurations, room templates, and JSON files"
           onChange={(e) => {
             const v = e.target.value
             e.target.value = ''
-            if (v === 'save') {
+            const st = useStore.getState()
+            if (v === 'save') doSaveAs()
+            else if (v === 'export') exportJSON({ room: st.room, pieces: st.pieces, connections: st.connections })
+            else if (v === 'import') fileRef.current?.click()
+            else if (v === 'saveroom') {
               const name = prompt('Save room (shape + objects) as template:', 'our living room')
               if (!name) return
-              const { room, pieces } = useStore.getState()
-              saveRoomTemplate(name, { room, objects: pieces.filter((p) => p.custom) })
+              saveRoomTemplate(name, { room: st.room, objects: st.pieces.filter((p) => p.custom) })
               setRoomTpls(listRoomTemplates())
-            } else if (v.startsWith('load:')) {
+            } else if (v.startsWith('cfg:')) doLoad(v.slice(4))
+            else if (v.startsWith('room:')) {
               const t = loadRoomTemplate(v.slice(5))
               if (t) store.applyRoomTemplate(t.room, t.objects)
-            } else if (v.startsWith('del:')) {
-              deleteRoomTemplate(v.slice(4))
+            } else if (v.startsWith('delcfg:')) {
+              deleteNamed(v.slice(7))
+              setSaves(listSaves())
+            } else if (v.startsWith('delroom:')) {
+              deleteRoomTemplate(v.slice(8))
               setRoomTpls(listRoomTemplates())
             }
           }}
         >
-          <option value="">🏠 Rooms…</option>
-          <option value="save">💾 Save current room as template</option>
-          {roomTpls.map((n) => (
-            <option key={n} value={`load:${n}`}>
-              {n}
-            </option>
-          ))}
-          {roomTpls.map((n) => (
-            <option key={`d${n}`} value={`del:${n}`}>
-              🗑 delete “{n}”
-            </option>
-          ))}
+          <option value="">📁 File…</option>
+          <option value="save">💾 Save configuration…</option>
+          <option value="saveroom">🏠 Save room as template…</option>
+          <option value="export">⇩ Export JSON</option>
+          <option value="import">⇧ Import JSON</option>
+          {saves.length > 0 && (
+            <optgroup label="Load configuration">
+              {saves.map((n) => (
+                <option key={n} value={`cfg:${n}`}>
+                  {n}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {roomTpls.length > 0 && (
+            <optgroup label="Load room template">
+              {roomTpls.map((n) => (
+                <option key={n} value={`room:${n}`}>
+                  {n}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {(saves.length > 0 || roomTpls.length > 0) && (
+            <optgroup label="Delete…">
+              {saves.map((n) => (
+                <option key={`dc${n}`} value={`delcfg:${n}`}>
+                  config “{n}”
+                </option>
+              ))}
+              {roomTpls.map((n) => (
+                <option key={`dr${n}`} value={`delroom:${n}`}>
+                  room “{n}”
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
         <input
           ref={fileRef}

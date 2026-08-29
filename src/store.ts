@@ -471,7 +471,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
   connect(a, b) {
     if (a === b) return
-    const { connections } = get()
+    const { connections, pieces } = get()
+    // only couch pieces join into units — shapes/doors/tables never attach
+    if (pieces.find((p) => p.id === a)?.custom || pieces.find((p) => p.id === b)?.custom) return
     if (connections.some((c) => (c.a === a && c.b === b) || (c.a === b && c.b === a))) return
     set((s) => ({ connections: [...s.connections, { a, b }] }))
   },

@@ -182,7 +182,7 @@ export default function Inspector() {
           <div className="panel-head">Nothing selected</div>
           <div className="hint">
             Click a piece to select its unit · ⌥-click or double-click for a single piece · Tab cycles units · drag
-            pieces near a green dashed edge to snap &amp; connect · Space+drag pans.
+            pieces near a green dashed edge to snap &amp; connect · drag empty canvas to pan.
           </div>
         </div>
       )}

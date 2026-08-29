@@ -49,27 +49,6 @@ export default function Canvas() {
   const dragRef = useRef<DragState | null>(null)
   const [snapHint, setSnapHint] = useState<{ a: WorldEdge; b: WorldEdge } | null>(null)
   const userZoomed = useRef(false)
-  const spaceHeld = useRef(false)
-
-  // hold Space (or use middle mouse) to pan — plain background drags no longer move the view
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (e.code === 'Space' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-        spaceHeld.current = true
-        e.preventDefault()
-      }
-    }
-    const up = (e: KeyboardEvent) => {
-      if (e.code === 'Space') spaceHeld.current = false
-    }
-    window.addEventListener('keydown', down)
-    window.addEventListener('keyup', up)
-    return () => {
-      window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup', up)
-    }
-  }, [])
 
   const roomBB = useMemo(() => bboxOf(room), [room])
   const F = (v: number) => fmtLen(v, store.units)
@@ -178,12 +157,9 @@ export default function Canvas() {
 
   function onBackgroundPointerDown(e: React.PointerEvent) {
     if (editRoom) return
-    if (spaceHeld.current || e.button === 1) {
-      safeCapture(e)
-      dragRef.current = { mode: 'pan', startScreen: { x: e.clientX, y: e.clientY }, origView: view }
-      return
-    }
-    store.select(null)
+    // drag empty canvas to pan; a plain click (no movement) deselects on release
+    safeCapture(e)
+    dragRef.current = { mode: 'pan', startScreen: { x: e.clientX, y: e.clientY }, origView: view }
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -280,7 +256,9 @@ export default function Canvas() {
     if (snap) {
       dx += snap.dx
       dy += snap.dy
-      setSnapHint(snap.connects ? { a: snap.moving, b: snap.fixed } : null)
+      const isCustom = (id: string) => pieces.find((p) => p.id === id)?.custom != null
+      const wouldConnect = snap.connects && !isCustom(snap.moving.pieceId) && !isCustom(snap.fixed.pieceId)
+      setSnapHint(wouldConnect ? { a: snap.moving, b: snap.fixed } : null)
     } else {
       setSnapHint(null)
       const walls: [Pt, Pt][] = room.map((p, i) => [p, room[(i + 1) % room.length]])
@@ -298,6 +276,11 @@ export default function Canvas() {
     dragRef.current = null
     if (d?.mode === 'piece' && d.moved && snapHint) {
       store.connect(snapHint.a.pieceId, snapHint.b.pieceId)
+    }
+    if (d?.mode === 'pan') {
+      const dvx = Math.abs(view.tx - d.origView.tx)
+      const dvy = Math.abs(view.ty - d.origView.ty)
+      if (dvx < 3 && dvy < 3) store.select(null)
     }
     setSnapHint(null)
   }

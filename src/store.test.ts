@@ -178,6 +178,26 @@ describe('rotation steps and polygons', () => {
   })
 })
 
+describe('shapes never attach to couches', () => {
+  it('connect() refuses when either side is a custom object', () => {
+    state().addCustom({ kind: 'poly', w: 36, d: 36, sides: 4 })
+    const shape = state().pieces[state().pieces.length - 1]
+    const couch = state().pieces.find((p) => !p.custom)!
+    state().connect(shape.id, couch.id)
+    state().connect(couch.id, shape.id)
+    expect(state().connections.some((c) => c.a === shape.id || c.b === shape.id)).toBe(false)
+  })
+
+  it('nudging a shape flush against a couch aligns it but creates no connection', () => {
+    const p11 = { id: 'c1', defId: '11', x: 24, y: 20, rot: 0 as const, reversed: false }
+    const shape = { id: 's1', custom: { kind: 'rect' as const, w: 40, d: 40 }, x: 24 + 92 + 3, y: 22, rot: 0 as const, reversed: false }
+    useStore.setState({ pieces: [p11, shape], connections: [], selectedId: 's1', solo: false })
+    state().nudge(-1, 0)
+    expect(state().pieces.find((p) => p.id === 's1')!.x).toBe(24 + 92) // snapped flush
+    expect(state().connections).toHaveLength(0) // but not attached
+  })
+})
+
 describe('room templates', () => {
   it('applying a template swaps room and objects but keeps couch pieces', () => {
     state().addCustom({ kind: 'door', w: 32, d: 5 })
