@@ -15,7 +15,8 @@ const HOTKEYS: [string, string][] = [
   ['Drag', 'Move — green edges glow when a snap-connect is possible'],
   ['Arrows / Shift+Arrows', 'Nudge 1″ / 12″'],
   ['R / Shift+R', 'Rotate 90° CW / CCW'],
-  ['F', 'Reverse (flip L↔R) — reversible pieces & whole units'],
+  ['⌃→ / ⌃← (Ctrl+Arrows)', 'Rotate 90° CW / CCW'],
+  ['F or ⌥Arrow (Option+Arrow)', 'Reverse (flip L↔R) — reversible pieces & whole units'],
   ['U', 'Detach selected piece from its unit'],
   ['D', 'Duplicate selection'],
   ['Delete', 'Remove selection'],
@@ -91,15 +92,21 @@ export default function App() {
         setShowHelp(true)
       } else if (e.key.startsWith('Arrow')) {
         e.preventDefault()
-        const step = e.shiftKey ? 12 : 1
-        const d: Record<string, [number, number]> = {
-          ArrowUp: [0, -step],
-          ArrowDown: [0, step],
-          ArrowLeft: [-step, 0],
-          ArrowRight: [step, 0],
+        if (e.ctrlKey) {
+          s.rotateSelection(e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 1)
+        } else if (e.altKey) {
+          s.reverseSelection()
+        } else {
+          const step = e.shiftKey ? 12 : 1
+          const d: Record<string, [number, number]> = {
+            ArrowUp: [0, -step],
+            ArrowDown: [0, step],
+            ArrowLeft: [-step, 0],
+            ArrowRight: [step, 0],
+          }
+          const [dx, dy] = d[e.key]
+          s.nudge(dx, dy)
         }
-        const [dx, dy] = d[e.key]
-        s.nudge(dx, dy)
       }
     }
     window.addEventListener('keydown', onKey)
