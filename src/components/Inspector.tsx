@@ -1,6 +1,12 @@
 import { defFor, displayCode, isReversible, unitSeats } from '../catalog'
 import { fmtLen, bboxOf } from '../geometry'
-import { effectiveRotStep, pieceBBox, unitBBox, useStore } from '../store'
+import { pieceBBox, unitBBox, useStore } from '../store'
+
+const STEP_OPTIONS = [1, 5, 10, 15, 22.5, 30, 45, 90, 180]
+
+function stepOptionsWith(current: number): number[] {
+  return STEP_OPTIONS.includes(current) ? STEP_OPTIONS : [...STEP_OPTIONS, current].sort((a, b) => a - b)
+}
 
 export default function Inspector() {
   const store = useStore()
@@ -106,19 +112,29 @@ export default function Inspector() {
           )}
           {sel.custom && <div className="hint">Drag the blue corner anchor on the canvas to resize.</div>}
           <label className="stack">
-            Rotate step for this piece (°) — blank uses the default ({sel.custom ? store.rotStepShapes : store.rotStepPieces}°)
-            <input
-              type="number"
-              min={1}
-              max={180}
-              step="any"
+            Rotate step for this piece
+            <select
               value={sel.rotStep ?? ''}
-              placeholder={String(effectiveRotStep(sel, store))}
               onChange={(e) =>
                 store.setPieceRotStep(sel.id, e.target.value === '' ? undefined : Number(e.target.value))
               }
-            />
+            >
+              <option value="">default ({sel.custom ? store.rotStepShapes : store.rotStepPieces}°)</option>
+              {STEP_OPTIONS.map((v) => (
+                <option key={v} value={v}>
+                  {v}°
+                </option>
+              ))}
+            </select>
           </label>
+          {sel.rot !== 0 && (
+            <div className="hint">
+              Current angle: {sel.rot}°{' '}
+              <button className="mini" onClick={() => store.resetRotation()} title="Rotate back to 0°">
+                ↺ Reset to 0°
+              </button>
+            </div>
+          )}
           <div className="btn-grid">
             <button onClick={() => store.rotateSelection(1)} title="Rotate 90° clockwise (R)">
               ⟳ Rotate
@@ -164,26 +180,24 @@ export default function Inspector() {
         <div className="panel-head">Rotation defaults</div>
         <div className="row">
           <label>
-            Couch (°)
-            <input
-              type="number"
-              min={1}
-              max={180}
-              step="any"
-              value={store.rotStepPieces}
-              onChange={(e) => store.setRotSteps(Number(e.target.value), store.rotStepShapes)}
-            />
+            Couch
+            <select value={store.rotStepPieces} onChange={(e) => store.setRotSteps(Number(e.target.value), store.rotStepShapes)}>
+              {stepOptionsWith(store.rotStepPieces).map((v) => (
+                <option key={v} value={v}>
+                  {v}°
+                </option>
+              ))}
+            </select>
           </label>
           <label>
-            Shapes (°)
-            <input
-              type="number"
-              min={1}
-              max={180}
-              step="any"
-              value={store.rotStepShapes}
-              onChange={(e) => store.setRotSteps(store.rotStepPieces, Number(e.target.value))}
-            />
+            Shapes
+            <select value={store.rotStepShapes} onChange={(e) => store.setRotSteps(store.rotStepPieces, Number(e.target.value))}>
+              {stepOptionsWith(store.rotStepShapes).map((v) => (
+                <option key={v} value={v}>
+                  {v}°
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <div className="hint">R / ⌘-arrows rotate by these steps; override per piece above when one is selected.</div>

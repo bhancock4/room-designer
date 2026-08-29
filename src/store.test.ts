@@ -147,6 +147,23 @@ describe('rotation steps and polygons', () => {
     expect(state().pieces.find((p) => p.id === poly.id)!.rot).toBe(67.5)
   })
 
+  it('reset returns a rotated piece to 0 degrees, keeping its center in place', () => {
+    state().addCustom({ kind: 'poly', w: 48, d: 30, sides: 4 })
+    const poly = state().pieces[state().pieces.length - 1]
+    const before = pieceBBox(state().pieces.find((p) => p.id === poly.id)!)
+    state().setPieceRotStep(poly.id, 22.5)
+    state().rotateSelection(1)
+    state().rotateSelection(1)
+    expect(state().pieces.find((p) => p.id === poly.id)!.rot).toBe(45)
+    state().resetRotation()
+    const after = state().pieces.find((p) => p.id === poly.id)!
+    expect(after.rot).toBe(0)
+    const bbAfter = pieceBBox(after)
+    expect(bbAfter.x + bbAfter.w / 2).toBeCloseTo(before.x + before.w / 2, 0)
+    expect(bbAfter.y + bbAfter.h / 2).toBeCloseTo(before.y + before.h / 2, 0)
+    expect([bbAfter.w, bbAfter.h]).toEqual([48, 30])
+  })
+
   it('polygon shape: 4 sides is an exact rectangle, sides are editable, resize clamps', () => {
     state().addCustom({ kind: 'poly', w: 48, d: 30, sides: 4 })
     const poly = state().pieces[state().pieces.length - 1]

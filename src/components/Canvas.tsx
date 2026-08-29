@@ -77,9 +77,9 @@ export default function Canvas() {
   // fit view to room
   useEffect(() => {
     if (userZoomed.current) return
-    const pad = 70
-    // fit, then back off 20% so the layout breathes in the viewport
-    const scale = Math.min((size.w - pad * 2) / roomBB.w, (size.h - pad * 2) / roomBB.h) * 0.8
+    // fill the viewport — just enough padding for the outer dimension labels
+    const pad = 52
+    const scale = Math.min((size.w - pad * 2) / roomBB.w, (size.h - pad * 2) / roomBB.h)
     if (!isFinite(scale) || scale <= 0) return
     setView({
       scale,

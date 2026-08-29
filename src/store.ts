@@ -115,6 +115,8 @@ interface AppState extends Snapshot {
   setPositions(entries: { id: string; x: number; y: number }[]): void
   nudge(dx: number, dy: number): void
   rotateSelection(dir: 1 | -1): void
+  rotateScopeBy(theta: number): void
+  resetRotation(): void
   reverseSelection(): void
   detachSelected(): void
   detachPiece(id: string): void
@@ -395,10 +397,23 @@ export const useStore = create<AppState>((set, get) => ({
   rotateSelection(dir) {
     const scope = get().selectionScope()
     if (!scope.length) return
+    const anchor = scope.find((p) => p.id === get().selectedId) ?? scope[0]
+    get().rotateScopeBy(dir * effectiveRotStep(anchor, get()))
+  },
+  resetRotation() {
+    const scope = get().selectionScope()
+    if (!scope.length) return
+    const anchor = scope.find((p) => p.id === get().selectedId) ?? scope[0]
+    let theta = -anchor.rot % 360
+    if (theta <= -180) theta += 360
+    if (theta === 0) return
+    get().rotateScopeBy(theta)
+  },
+  rotateScopeBy(theta) {
+    const scope = get().selectionScope()
+    if (!scope.length || !theta) return
     get().push()
     if (get().solo && scope.length === 1) get().detachPiece(scope[0].id)
-    const anchor = scope.find((p) => p.id === get().selectedId) ?? scope[0]
-    const theta = dir * effectiveRotStep(anchor, get())
     const bb = unitBBox(scope)
     const cx = bb.x + bb.w / 2
     const cy = bb.y + bb.h / 2

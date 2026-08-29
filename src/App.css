@@ -258,6 +258,11 @@ input[type='text'] {
   font-size: 12px;
   padding: 6px 4px;
 }
+button.mini {
+  font-size: 11px;
+  padding: 2px 8px;
+  margin-left: 4px;
+}
 button.rev-ok {
   border-color: #2fa864;
   color: #1d7a46;
