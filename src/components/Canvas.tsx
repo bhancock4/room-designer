@@ -280,10 +280,23 @@ export default function Canvas() {
     setSnapHint(null)
   }
 
-  function onWheel(e: React.WheelEvent) {
-    const r = svgRef.current!.getBoundingClientRect()
-    zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015))
-  }
+  // native non-passive wheel handler: preventDefault stops trackpad pinch from
+  // triggering browser page-zoom (which scales the whole UI, menus and all)
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const onWheelNative = (e: WheelEvent) => {
+      e.preventDefault()
+      const r = el.getBoundingClientRect()
+      // pinch gestures arrive as ctrl+wheel with small deltas — scale them up
+      const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.008 : 0.0015))
+      zoomAt(e.clientX - r.left, e.clientY - r.top, factor)
+    }
+    el.addEventListener('wheel', onWheelNative, { passive: false })
+    return () => el.removeEventListener('wheel', onWheelNative)
+    // zoomAt only touches stable setState + refs, so the first closure stays valid
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function onRoomEdgeDoubleClick(e: React.MouseEvent, index: number) {
     e.stopPropagation()
@@ -454,7 +467,6 @@ export default function Canvas() {
         height={size.h}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onWheel={onWheel}
         onPointerDown={onBackgroundPointerDown}
       >
         <defs>
