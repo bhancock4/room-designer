@@ -5,6 +5,7 @@ import { findSnap, findWallSnap, unitOf, components } from '../connect'
 import { clearanceGaps, gapColor } from '../clearance'
 import { defFor, displayCode, doorZonePts, isReversible, shapeFor, DOOR_CLEARANCE } from '../catalog'
 import { pieceBBox, unitBBox, useStore } from '../store'
+import { THEMES, type CanvasTheme } from '../themes'
 
 interface View {
   scale: number
@@ -18,13 +19,6 @@ type DragState =
   | { mode: 'vertex'; index: number; pushed: boolean }
   | { mode: 'edge'; index: number; start: Pt; origRoom: Pt[]; pushed: boolean }
   | { mode: 'resize'; id: string; start: Pt; origW: number; origD: number; rot: number; reversed: boolean; pushed: boolean }
-
-const CAT_FILL: Record<string, string> = {
-  SOFAS: '#f5ecda',
-  SECTIONALS: '#f5ecda',
-  OTTOS: '#ece3d0',
-  OBJECTS: '#dfe9ef',
-}
 
 function safeCapture(e: React.PointerEvent) {
   try {
@@ -52,6 +46,7 @@ export default function Canvas() {
 
   const roomBB = useMemo(() => bboxOf(room), [room])
   const F = (v: number) => fmtLen(v, store.units)
+  const T = THEMES[store.theme] ?? THEMES.cream
   const defaultScale = useRef(1)
 
   // default view: room fitted then pulled back 25% inside the endless grid
@@ -311,12 +306,14 @@ export default function Canvas() {
     const def = defFor(p)
     const fill = p.custom
       ? p.custom.kind === 'door'
-        ? '#fbf8f1' // doors read as wall openings, not furniture
-        : CAT_FILL.OBJECTS
-      : CAT_FILL[def?.category ?? 'SOFAS']
+        ? T.doorFill // doors read as wall openings, not furniture
+        : T.objFill
+      : def?.category === 'OTTOS'
+        ? T.ottoFill
+        : T.sofaFill
     const c = centroid(pts)
     const bb = pieceBBox(p)
-    const stroke = isSolo ? '#e07b1f' : isSel ? '#2b7de9' : '#4a3f35'
+    const stroke = isSolo ? T.solo : isSel ? T.select : T.stroke
     const overlapped = overlapping.has(p.id)
     const fontC = Math.min(9, Math.max(5, bb.w / 8))
     return (
@@ -335,7 +332,7 @@ export default function Canvas() {
         )}
         <path
           d={pathOf(pts)}
-          fill={overlapped ? '#f6d7d2' : fill}
+          fill={overlapped ? T.overlapFill : fill}
           stroke={stroke}
           strokeWidth={isSel ? 2.5 : 1.5}
           vectorEffect="non-scaling-stroke"
@@ -364,7 +361,7 @@ export default function Canvas() {
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke={e.kind === 'back' ? 'rgba(74,63,53,0.22)' : 'rgba(74,63,53,0.42)'}
+                stroke={e.kind === 'back' ? T.bandBack : T.bandArm}
                 strokeWidth={e.kind === 'back' ? 7 : 8}
               />
             )
@@ -379,7 +376,7 @@ export default function Canvas() {
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke="#5f9c7a"
+                stroke={T.openEdge}
                 strokeWidth={1.5 / s}
                 vectorEffect="non-scaling-stroke"
                 strokeDasharray={`${6 / s} ${4 / s}`}
@@ -393,20 +390,20 @@ export default function Canvas() {
             key={`d${i}`}
             points={line.map((q) => `${q.x},${q.y}`).join(' ')}
             fill="none"
-            stroke="#6b5f52"
+            stroke={T.decor}
             strokeWidth={1.4 / s}
             strokeDasharray={p.custom?.kind === 'door' && i === 0 ? `${4 / s} ${3 / s}` : undefined}
           />
         ))}
-        <text x={c.x} y={c.y - 1} textAnchor="middle" fontSize={fontC} fontWeight={700} fill="#3d342b">
+        <text x={c.x} y={c.y - 1} textAnchor="middle" fontSize={fontC} fontWeight={700} fill={T.text}>
           {displayCode(p)}
           {isReversible(p) ? ' ⇄' : ''}
         </text>
-        <text x={c.x} y={c.y + fontC} textAnchor="middle" fontSize={fontC * 0.72} fill="#6b5f52">
+        <text x={c.x} y={c.y + fontC} textAnchor="middle" fontSize={fontC * 0.72} fill={T.subText}>
           {F(bb.w)} × {F(bb.h)}
         </text>
         {p.label && !p.custom && (
-          <text x={c.x} y={c.y + fontC * 2} textAnchor="middle" fontSize={fontC * 0.72} fill="#6b5f52" fontStyle="italic">
+          <text x={c.x} y={c.y + fontC * 2} textAnchor="middle" fontSize={fontC * 0.72} fill={T.subText} fontStyle="italic">
             {p.label}
           </text>
         )}
@@ -468,23 +465,23 @@ export default function Canvas() {
             patternUnits="userSpaceOnUse"
             patternTransform={`translate(${view.tx},${view.ty})`}
           >
-            <path d={`M ${gridStep * s} 0 L 0 0 0 ${gridStep * s}`} fill="none" stroke="#d8d2c6" strokeWidth={1} />
+            <path d={`M ${gridStep * s} 0 L 0 0 0 ${gridStep * s}`} fill="none" stroke={T.grid} strokeWidth={1} />
           </pattern>
           <clipPath id="roomclip">
             <path d={pathOf(room.map((p) => ({ x: p.x * s + view.tx, y: p.y * s + view.ty })))} />
           </clipPath>
         </defs>
         {/* endless workspace: grid everywhere, room interior lifted */}
-        <rect width={size.w} height={size.h} fill="#f1ecdf" />
+        <rect width={size.w} height={size.h} fill={T.workspace} />
         <g clipPath="url(#roomclip)">
-          <rect width={size.w} height={size.h} fill="#fbf8f1" />
+          <rect width={size.w} height={size.h} fill={T.roomFill} />
         </g>
         <rect width={size.w} height={size.h} fill="url(#grid)" />
         <g transform={`translate(${view.tx},${view.ty}) scale(${s})`}>
           {/* room outline */}
-          <path d={pathOf(room)} fill="none" stroke="#3d342b" strokeWidth={5 / s} vectorEffect="none" />
+          <path d={pathOf(room)} fill="none" stroke={T.wall} strokeWidth={5 / s} vectorEffect="none" />
           {/* room dims */}
-          <RoomDims room={room} s={s} units={store.units} />
+          <RoomDims room={room} s={s} units={store.units} t={T} />
           {/* pieces: unselected first so selected renders on top */}
           {pieces.filter((p) => !selectedUnit?.includes(p.id)).map(renderPiece)}
           {pieces.filter((p) => selectedUnit?.includes(p.id)).map(renderPiece)}
@@ -501,7 +498,7 @@ export default function Canvas() {
                 width={hs}
                 height={hs}
                 fill="#fff"
-                stroke="#2b7de9"
+                stroke={T.select}
                 strokeWidth={2 / s}
                 style={{ cursor: 'nwse-resize' }}
                 onPointerDown={(e) => {
@@ -524,7 +521,7 @@ export default function Canvas() {
           {/* unit dimension lines: all multi-piece units + selected unit */}
           {units
             .filter((u) => u.length > 1 || (selectedUnit && u[0] === selectedUnit[0]))
-            .map((u) => dimLines(u, u === selectedUnit ? '#2b7de9' : '#8a7f6f', 8))}
+            .map((u) => dimLines(u, u === selectedUnit ? T.select : T.dimNeutral, 8))}
           {/* door keep-clear zones */}
           {doorZones.map((z) => {
             const zc = centroid(z.zone)
@@ -532,8 +529,8 @@ export default function Canvas() {
               <g key={`dz${z.id}`} pointerEvents="none">
                 <path
                   d={pathOf(z.zone)}
-                  fill={z.blocked ? 'rgba(192,57,43,0.15)' : 'rgba(46,139,87,0.06)'}
-                  stroke={z.blocked ? '#c0392b' : '#a5b0a0'}
+                  fill={z.blocked ? 'rgba(192,57,43,0.15)' : T.zoneClearFill}
+                  stroke={z.blocked ? '#c0392b' : T.zoneClearStroke}
                   strokeWidth={1.2 / s}
                   strokeDasharray={`${4 / s} ${3 / s}`}
                 />
@@ -574,7 +571,7 @@ export default function Canvas() {
           })}
           {/* snap hint */}
           {snapHint && (
-            <g stroke="#2fa864" strokeWidth={4 / s} strokeLinecap="round" pointerEvents="none">
+            <g stroke={T.snap} strokeWidth={4 / s} strokeLinecap="round" pointerEvents="none">
               <line x1={snapHint.a.a.x} y1={snapHint.a.a.y} x2={snapHint.a.b.x} y2={snapHint.a.b.y} />
               <line x1={snapHint.b.a.x} y1={snapHint.b.a.y} x2={snapHint.b.b.x} y2={snapHint.b.b.y} />
             </g>
@@ -606,7 +603,7 @@ export default function Canvas() {
                   cx={p.x}
                   cy={p.y}
                   r={6 / s}
-                  fill="#2b7de9"
+                  fill={T.select}
                   stroke="#fff"
                   strokeWidth={2 / s}
                   style={{ cursor: 'grab' }}
@@ -649,14 +646,14 @@ export default function Canvas() {
   )
 }
 
-function RoomDims({ room, s, units }: { room: Pt[]; s: number; units: 'in' | 'ftin' }) {
+function RoomDims({ room, s, units, t }: { room: Pt[]; s: number; units: 'in' | 'ftin'; t: CanvasTheme }) {
   const F = (v: number) => fmtLen(v, units)
   const bb = bboxOf(room)
   const fs = 13 / s
   const o = 26 / s + 8
   const irregular = room.length > 4
   return (
-    <g stroke="#7a7062" fill="#7a7062" strokeWidth={1 / s} pointerEvents="none">
+    <g stroke={t.roomDim} fill={t.roomDim} strokeWidth={1 / s} pointerEvents="none">
       <line x1={bb.x} y1={bb.y - o} x2={bb.x + bb.w} y2={bb.y - o} />
       <text x={bb.x + bb.w / 2} y={bb.y - o - 4 / s} textAnchor="middle" fontSize={fs} stroke="none" fontWeight={600}>
         {F(bb.w)} ({(bb.w / 12).toFixed(1)} ft)

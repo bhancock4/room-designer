@@ -4,6 +4,7 @@ import Palette from './components/Palette'
 import Inspector from './components/Inspector'
 import SpecSheet from './components/SpecSheet'
 import { stepOptionsWith, useStore } from './store'
+import { THEMES, THEME_KEYS } from './themes'
 import { PRESETS } from './presets'
 import {
   deleteNamed,
@@ -288,6 +289,28 @@ export default function App() {
         <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>⚙ Settings</h2>
+            <h3>Canvas theme</h3>
+            <div className="theme-row">
+              {THEME_KEYS.map((k) => {
+                const th = THEMES[k]
+                return (
+                  <button
+                    key={k}
+                    className={`theme-swatch${store.theme === k ? ' active' : ''}`}
+                    onClick={() => store.setTheme(k)}
+                    title={th.label}
+                  >
+                    <svg width={64} height={44}>
+                      <rect width={64} height={44} fill={th.workspace} rx={4} />
+                      <rect x={8} y={7} width={48} height={30} fill={th.roomFill} stroke={th.wall} strokeWidth={2} />
+                      <rect x={13} y={12} width={20} height={9} fill={th.sofaFill} stroke={th.stroke} />
+                      <rect x={36} y={12} width={9} height={17} fill={th.sofaFill} stroke={th.stroke} />
+                    </svg>
+                    <small>{th.label}</small>
+                  </button>
+                )
+              })}
+            </div>
             <h3>Rotation steps</h3>
             <div className="settings-row">
               <label>

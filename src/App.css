@@ -40,6 +40,25 @@ body,
   width: 96px;
   text-align: center;
 }
+.theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px;
+  font-size: 10.5px;
+  border: 2px solid #d8d2c6;
+}
+.theme-swatch.active {
+  border-color: #2b7de9;
+  background: #eaf2fd;
+}
 .settings-row {
   display: flex;
   gap: 16px;

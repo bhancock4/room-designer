@@ -90,6 +90,8 @@ interface AppState extends Snapshot {
   showClearance: boolean
   toggleClearance(): void
   setLayout(pieces: Placed[], connections: Conn[]): void
+  theme: string
+  setTheme(t: string): void
   rotStepPieces: number
   rotStepShapes: number
   setRotSteps(pieces: number, shapes: number): void
@@ -167,6 +169,21 @@ export const useStore = create<AppState>((set, get) => ({
   setLayout(pieces, connections) {
     get().push()
     set({ pieces, connections, selectedId: null, solo: false })
+  },
+  theme: (() => {
+    try {
+      return localStorage.getItem('couch-planner:v1:theme') || 'cream'
+    } catch {
+      return 'cream'
+    }
+  })(),
+  setTheme(t) {
+    try {
+      localStorage.setItem('couch-planner:v1:theme', t)
+    } catch {
+      /* ignore */
+    }
+    set({ theme: t })
   },
   rotStepPieces: loadNum('couch-planner:v1:rotPieces', 90),
   rotStepShapes: loadNum('couch-planner:v1:rotShapes', 22.5),
