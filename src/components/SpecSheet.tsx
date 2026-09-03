@@ -24,7 +24,9 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
     return m
   }, [pieces])
 
-  const customs = pieces.filter((p) => p.custom)
+  // the sheet goes to the store: only catalog pieces + doors (wall openings) print,
+  // never decorative shapes/objects
+  const diagramPieces = pieces.filter((p) => !p.custom || p.custom.kind === 'door')
   const units = components(pieces.map((p) => p.id), connections).map((ids) =>
     pieces.filter((p) => ids.includes(p.id)),
   )
@@ -98,22 +100,6 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
           )
         })}
 
-        {customs.length > 0 && (
-          <div className="spec-section">
-            <div className="spec-rail">O B J E C T S</div>
-            <div className="spec-cards">
-              {customs.map((p) => (
-                <div className="spec-card" key={p.id}>
-                  <div className="spec-card-title">{displayCode(p)}</div>
-                  <div className="spec-card-dims">
-                    L: {F(p.custom!.w)} × D: {F(p.custom!.d)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="spec-note">* Available in both Left and Right configurations</div>
         <div className="spec-band">
           <span>CONFIGURATIONS</span>
@@ -130,7 +116,7 @@ export default function SpecSheet({ onClose }: { onClose: () => void }) {
             stroke="#000000"
             strokeWidth={2.5}
           />
-          {pieces.map((p) => {
+          {diagramPieces.map((p) => {
             const pts = worldShape(p, shapeFor(p)).pts
             const bb = pieceBBox(p)
             return (

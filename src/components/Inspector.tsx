@@ -3,11 +3,21 @@ import { fmtLen, bboxOf } from '../geometry'
 import { pieceBBox, unitBBox, useStore, STEP_OPTIONS } from '../store'
 
 /** Feet + inches input pair for a length stored in inches. */
-function FtInRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function FtInRow({
+  label,
+  value,
+  onChange,
+  min = 24,
+}: {
+  label: string
+  value: number
+  onChange: (v: number) => void
+  min?: number
+}) {
   const ft = Math.floor(Math.round(value) / 12)
   const inch = Math.round(value) % 12
   const set = (f: number, i: number) => {
-    const v = Math.max(24, f * 12 + i)
+    const v = Math.max(min, f * 12 + i)
     if (v !== Math.round(value)) onChange(v)
   }
   return (
@@ -15,7 +25,12 @@ function FtInRow({ label, value, onChange }: { label: string; value: number; onC
       <span className="ftin-label">{label}</span>
       <label>
         ft
-        <input type="number" min={2} value={ft} onChange={(e) => set(Math.max(0, Number(e.target.value) || 0), inch)} />
+        <input
+          type="number"
+          min={Math.floor(min / 12)}
+          value={ft}
+          onChange={(e) => set(Math.max(0, Number(e.target.value) || 0), inch)}
+        />
       </label>
       <label>
         in
@@ -82,55 +97,45 @@ export default function Inspector() {
             />
           </label>
           {sel.custom && (
-            <div className="row">
+            <>
               {sel.custom.circle ? (
-                <label>
-                  Diameter (in)
-                  <input
-                    type="number"
-                    value={sel.custom.w}
-                    min={1}
-                    onChange={(e) => {
-                      const v = Number(e.target.value) || 1
-                      store.setCustomDims(sel.id, v, v)
-                    }}
-                  />
-                </label>
+                <FtInRow
+                  label="Diameter"
+                  value={sel.custom.w}
+                  min={1}
+                  onChange={(v) => store.setCustomDims(sel.id, v, v)}
+                />
               ) : (
                 <>
-                  <label>
-                    W (in)
-                    <input
-                      type="number"
-                      value={sel.custom.w}
-                      min={1}
-                      onChange={(e) => store.setCustomDims(sel.id, Number(e.target.value) || 1, sel.custom!.d)}
-                    />
-                  </label>
-                  <label>
-                    D (in)
-                    <input
-                      type="number"
-                      value={sel.custom.d}
-                      min={1}
-                      onChange={(e) => store.setCustomDims(sel.id, sel.custom!.w, Number(e.target.value) || 1)}
-                    />
-                  </label>
+                  <FtInRow
+                    label="Width"
+                    value={sel.custom.w}
+                    min={1}
+                    onChange={(v) => store.setCustomDims(sel.id, v, sel.custom!.d)}
+                  />
+                  <FtInRow
+                    label="Depth"
+                    value={sel.custom.d}
+                    min={1}
+                    onChange={(v) => store.setCustomDims(sel.id, sel.custom!.w, v)}
+                  />
                 </>
               )}
               {sel.custom.kind === 'poly' && (
-                <label>
-                  Sides
-                  <input
-                    type="number"
-                    min={3}
-                    max={24}
-                    value={sel.custom.sides ?? 4}
-                    onChange={(e) => store.setCustomSides(sel.id, Number(e.target.value) || 4)}
-                  />
-                </label>
+                <div className="row">
+                  <label>
+                    Sides
+                    <input
+                      type="number"
+                      min={3}
+                      max={24}
+                      value={sel.custom.sides ?? 4}
+                      onChange={(e) => store.setCustomSides(sel.id, Number(e.target.value) || 4)}
+                    />
+                  </label>
+                </div>
               )}
-            </div>
+            </>
           )}
           {sel.custom && <div className="hint">Drag the blue corner anchor on the canvas to resize.</div>}
           <label className="stack">

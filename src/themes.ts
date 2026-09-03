@@ -28,6 +28,7 @@ export interface CanvasTheme {
   sofaFill: string
   ottoFill: string
   objFill: string
+  objStroke: string
   doorFill: string
   stroke: string
   bandBack: string
@@ -56,7 +57,8 @@ export const THEMES: Record<string, CanvasTheme> = {
     wall: '#3d342b',
     sofaFill: '#f5ecda',
     ottoFill: '#ece3d0',
-    objFill: '#dfe9ef',
+    objFill: '#eef4f8',
+    objStroke: '#93a7b4',
     doorFill: '#fbf8f1',
     stroke: '#4a3f35',
     bandBack: 'rgba(74,63,53,0.22)',
@@ -83,7 +85,8 @@ export const THEMES: Record<string, CanvasTheme> = {
     wall: '#33414f',
     sofaFill: '#e9eff5',
     ottoFill: '#dbe5ee',
-    objFill: '#d3e2ef',
+    objFill: '#f0f6fb',
+    objStroke: '#94a8ba',
     doorFill: '#f8fafc',
     stroke: '#41505f',
     bandBack: 'rgba(65,80,95,0.20)',
@@ -110,7 +113,8 @@ export const THEMES: Record<string, CanvasTheme> = {
     wall: '#3f3350',
     sofaFill: '#efe9f7',
     ottoFill: '#e2d8ef',
-    objFill: '#dcd3ec',
+    objFill: '#edf2f8',
+    objStroke: '#98a5bb',
     doorFill: '#faf8fd',
     stroke: '#4c3f61',
     bandBack: 'rgba(76,63,97,0.20)',
@@ -137,7 +141,8 @@ export const THEMES: Record<string, CanvasTheme> = {
     wall: '#33452f',
     sofaFill: '#e9f2e4',
     ottoFill: '#dae8d4',
-    objFill: '#d0e3d5',
+    objFill: '#edf3f6',
+    objStroke: '#8fa5ad',
     doorFill: '#f7fbf5',
     stroke: '#3f5239',
     bandBack: 'rgba(63,82,57,0.20)',
@@ -164,7 +169,8 @@ export const THEMES: Record<string, CanvasTheme> = {
     wall: '#e8f1ff',
     sofaFill: 'rgba(255,255,255,0.08)',
     ottoFill: 'rgba(255,255,255,0.05)',
-    objFill: 'rgba(160,200,255,0.15)',
+    objFill: 'rgba(160,200,255,0.07)',
+    objStroke: 'rgba(219,233,255,0.55)',
     doorFill: 'rgba(255,255,255,0.10)',
     stroke: '#dbe9ff',
     bandBack: 'rgba(255,255,255,0.28)',

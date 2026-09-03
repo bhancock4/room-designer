@@ -114,6 +114,12 @@ export default function Canvas() {
     [pieces, connections],
   )
   const selectedUnit = selectedId ? units.find((u) => u.includes(selectedId)) : undefined
+  // pieces joined into a unit all render in one upholstery color
+  const multiUnitIds = useMemo(() => {
+    const s = new Set<string>()
+    for (const u of units) if (u.length > 1) for (const id of u) s.add(id)
+    return s
+  }, [units])
 
   const gaps = useMemo(() => {
     if (!store.showClearance) return []
@@ -245,22 +251,25 @@ export default function Canvas() {
       const proposed = { ...p, x: o.x + dx, y: o.y + dy }
       movingEdges.push(...worldEdges(p.id, worldShape(proposed, shapeFor(p))))
     }
+    // customs never snap: shapes are free-floating decor (doors still get wall snap
+    // below so they can sit in a wall), and they never act as snap targets either
+    const draggedCustom = d.ids.length === 1 ? pieces.find((p) => p.id === d.ids[0])?.custom : undefined
     const fixedEdges: WorldEdge[] = []
-    for (const p of pieces) if (!idSet.has(p.id)) fixedEdges.push(...geoms.get(p.id)!.edges)
-    const snap = findSnap(movingEdges, fixedEdges, 6)
+    for (const p of pieces) if (!idSet.has(p.id) && !p.custom) fixedEdges.push(...geoms.get(p.id)!.edges)
+    const snap = draggedCustom ? null : findSnap(movingEdges, fixedEdges, 6)
     if (snap) {
       dx += snap.dx
       dy += snap.dy
-      const isCustom = (id: string) => pieces.find((p) => p.id === id)?.custom != null
-      const wouldConnect = snap.connects && !isCustom(snap.moving.pieceId) && !isCustom(snap.fixed.pieceId)
-      setSnapHint(wouldConnect ? { a: snap.moving, b: snap.fixed } : null)
+      setSnapHint(snap.connects ? { a: snap.moving, b: snap.fixed } : null)
     } else {
       setSnapHint(null)
-      const walls: [Pt, Pt][] = room.map((p, i) => [p, room[(i + 1) % room.length]])
-      const ws = findWallSnap(movingEdges, walls, 5)
-      if (ws) {
-        dx += ws.dx
-        dy += ws.dy
+      if (!draggedCustom || draggedCustom.kind === 'door') {
+        const walls: [Pt, Pt][] = room.map((p, i) => [p, room[(i + 1) % room.length]])
+        const ws = findWallSnap(movingEdges, walls, 5)
+        if (ws) {
+          dx += ws.dx
+          dy += ws.dy
+        }
       }
     }
     store.setPositions(d.ids.map((id) => ({ id, x: d.orig.get(id)!.x + dx, y: d.orig.get(id)!.y + dy })))
@@ -321,12 +330,13 @@ export default function Canvas() {
       ? p.custom.kind === 'door'
         ? T.doorFill // doors read as wall openings, not furniture
         : T.objFill
-      : def?.category === 'OTTOS'
+      : def?.category === 'OTTOS' && !multiUnitIds.has(p.id)
         ? T.ottoFill
         : T.sofaFill
     const c = centroid(pts)
     const bb = pieceBBox(p)
-    const stroke = isSolo ? T.solo : isSel ? T.select : T.stroke
+    const isShape = p.custom && p.custom.kind !== 'door'
+    const stroke = isSolo ? T.solo : isSel ? T.select : isShape ? T.objStroke : T.stroke
     const overlapped = overlapping.has(p.id)
     const fontC = Math.min(9, Math.max(5, bb.w / 8))
     return (
